@@ -2,21 +2,60 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Branch;
 use App\Models\School;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
-class Employee extends Model
+class Employee extends Authenticatable
 {
+    use HasFactory, Notifiable;
+
     protected $fillable = [
         'branch_id',
         'school_id',
         'employee_name',
-        'email',
+        'username',
         'password',
         'pass_text',
         'employee_type',
     ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'password' => 'hashed',
+    ];
+
+    /**
+     * Get the name of the unique identifier for the user.
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'username';
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     * This should return the primary key for session storage.
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->{$this->getKeyName()};
+    }
+
+    /**
+     * Mutator to hash password when setting
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = Hash::make($value);
+    }
 
     public function branch()
     {

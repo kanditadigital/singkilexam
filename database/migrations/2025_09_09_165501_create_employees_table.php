@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
             $table->string('employee_name');
-            $table->string('email')->unique();
+            $table->string('username')->unique();
             $table->string('password');
             $table->string('pass_text');
             $table->enum('employee_type', ['Guru', 'Staff', 'Kepala Sekolah'])->default('Guru');

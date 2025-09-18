@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Branch;
 use App\Models\School;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
-class Student extends Model
+class Student extends Authenticatable
 {
+    use HasFactory, Notifiable;
+
     protected $fillable = [
         'branch_id',
         'school_id',
@@ -19,6 +24,11 @@ class Student extends Model
         'student_gender',
         'student_photo',
     ];
+
+    public function getAuthIdentifierName()
+    {
+        return 'username';
+    }
 
     public function branch()
     {

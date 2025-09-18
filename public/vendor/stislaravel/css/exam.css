@@ -1,0 +1,48 @@
+body{
+    background-color: #f8f9fa;
+}
+
+.btn-exam{
+    border-radius: 50px;
+    padding: 10px 30px;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #3093d0;
+    color: #FFFFFF;
+}
+.btn-exam:hover{
+    border-radius: 50px;
+    padding: 10px 30px;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #2c8ac4;
+    color: #FFFFFF;
+}
+
+.navbar-exam{
+    position: relative;
+    background-color: #2c8ac4;
+    min-height: 16dvw;
+}
+.section-body{
+    position: absolute;
+    width: 100%;
+    top: 14.6dvh;
+    left: 50%;
+    transform: translate(-50%);
+}
+.section-body .card{
+    border-radius: 18px;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15)!important;
+    color: #646464;
+}
+.section-body .card label{
+    font-weight: 600;
+    font-size: 14px;
+}
+.section-body .card .text-confirmation{
+    font-weight: 300;
+    font-size: 17px;
+    margin-top: -7px;
+    border-bottom: 1px solid #cecece;
+}

@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
             'branch_id' => 1,
             'school_id' => 1,
             'employee_name' => 'Puguh Sulistyo Pambudi, S.Kom',
-            'email' => 'puguhedu@gmail.com',
+            'username' => 'puguhguru',
             'password' => Hash::make('employee123'),
             'pass_text' => 'employee123',
             'employee_type' => 'Kepala Sekolah',

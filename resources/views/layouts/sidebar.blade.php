@@ -20,7 +20,6 @@
             <li><a class="nav-link" href="{{ route('exam.index') }}"><i class="fas fa-file-alt"></i> <span>Data Ujian</span></a></li>
             <li><a class="nav-link" href="{{ route('mapel.index') }}"><i class="fas fa-book"></i> <span>Data Mata Pelajaran</span></a></li>
             <li><a class="nav-link" href="{{ route('sesi-ujian.index') }}"><i class="fas fa-calendar-alt"></i> <span>Data Sesi Ujian</span></a></li>
-            <li><a class="nav-link" href="{{ route('soal.index') }}"><i class="fas fa-question"></i> <span>Data Soal</span></a></li>
         </ul>
         <!-- End Menu -->
     </aside>

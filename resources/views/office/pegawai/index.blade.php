@@ -17,7 +17,7 @@
                             <th>Nama Cabdin</th>
                             <th>Nama Sekolah</th>
                             <th>Nama Pegawai</th>
-                            <th>Email</th>
+                            <th>Username</th>
                             <th>Tipe Pegawai</th>
                             <th>Opsi</th>
                         </tr>
@@ -46,7 +46,7 @@
                 { data: 'branch_name', name: 'branch_name' },
                 { data: 'school_name', name: 'school_name' },
                 { data: 'employee_name', name: 'employee_name' },
-                { data: 'email', name: 'email' },
+                { data: 'username', name: 'username' },
                 { data: 'employee_type', name: 'employee_type' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
             ],

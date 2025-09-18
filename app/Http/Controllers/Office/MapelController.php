@@ -80,9 +80,6 @@ class MapelController extends Controller
                     return $row->subject->subject_name;
                 })
                 ->addColumn("action", function ($row) {
-                    $showButton = '<button type="button" class="btn btn-outline-info btn-sm show ml-2" data-id="' . $row->id . '">
-                                    <i class="fas fa-fw fa-eye"></i> Lihat
-                                    </button>';
                     $editButton = '<button type="button" class="btn btn-outline-primary btn-sm edit ml-2" data-id="' . $row->id . '">
                                     <i class="fas fa-fw fa-pencil-alt"></i> Edit
                                     </button>';
@@ -90,7 +87,7 @@ class MapelController extends Controller
                                     <i class="fas fa-fw fa-times"></i> Hapus
                                     </button>';
 
-                    return $showButton . $editButton . $deleteButton;
+                    return $editButton . $deleteButton;
                 })
             ->rawColumns(["action", "subject_name"])
             ->make(true);

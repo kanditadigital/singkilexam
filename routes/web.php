@@ -10,11 +10,15 @@ use App\Http\Controllers\Office\SiswaController;
 use App\Http\Controllers\Office\SesiController;
 use App\Http\Controllers\Office\MapelController;
 use App\Http\Controllers\Office\SoalController;
+use App\Http\Controllers\Std\ExamController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/',[AuthController::class, 'formSignIn'])->name('home');
-Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin');
+Route::get('/admin',[AuthController::class, 'formSignIn'])->name('admin');
+Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin.form');
 Route::post('/signin',[AuthController::class, 'signIn'])->name('signin');
+
+Route::get('/',[AuthController::class, 'formSignParticipate'])->name('login');
+Route::post('/signparticipate',[AuthController::class, 'signParticipate'])->name('signparticipate');
 Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
 
 Route::prefix('disdik')->middleware('auth')->group(function(){
@@ -31,4 +35,8 @@ Route::prefix('disdik')->middleware('auth')->group(function(){
     // get school by branch
     Route::get('/schools/by-branch/{branchId}', [PegawaiController::class, 'getByBranch'])->name('pegawai.getByBranch');
     Route::get('/siswa/by-branch/{branchId}', [SiswaController::class, 'getByBranch'])->name('siswa.getByBranch');
+});
+
+Route::prefix('std')->middleware(['auth:students'])->group(function(){
+    Route::get('/confirmation',[ExamController::class, 'index'])->name('std.confirmation');
 });
