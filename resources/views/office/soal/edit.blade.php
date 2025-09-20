@@ -47,7 +47,7 @@
                             @enderror
                         </div>
                     </div>
-                    
+
                     <div class="form-group row">
                         <div class="col-md-6">
                             <label for="question_format">Format Soal <span class="text-danger">*</span></label>
@@ -74,7 +74,7 @@
                             @enderror
                         </div>
                     </div>
-                    
+
                     <div class="form-group" id="question-text-container" style="display: none;">
                         <label for="question_text">Teks Pertanyaan <span class="text-danger" id="text-required">*</span></label>
                         <textarea name="question_text" id="texteditor" class="@error('question_text') is-invalid @enderror">{{ old('question_text', $soal->question_text) }}</textarea>
@@ -82,7 +82,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    
+
                     <div class="form-group" id="question-image-container" style="display: none;">
                         <label for="question_image">Gambar Soal <span class="text-danger" id="image-required">*</span></label>
                         <input type="file" name="question_image" id="question_image" class="form-control @error('question_image') is-invalid @enderror" accept="image/jpeg,image/jpg,image/png,image/gif,image/svg+xml">
@@ -90,7 +90,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                         <small class="form-text text-muted">Format yang diizinkan: JPEG, JPG, PNG, GIF, SVG. Maksimal 2MB.</small>
-                        
+
                         @if($soal->question_image)
                             <div class="mt-2 current-image-wrapper">
                                 <label class="form-label">Gambar Saat Ini:</label>
@@ -102,7 +102,7 @@
                                 </div>
                             </div>
                         @endif
-                        
+
                         <div id="image-preview" class="mt-2" style="display: none;">
                             <label class="form-label">Preview Gambar Baru:</label>
                             <div>
@@ -113,7 +113,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Options Container -->
                     <div id="options-container">
                         <hr>
@@ -212,7 +212,6 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.tiny.cloud/1/lgwbcigxg5kj9r7fpvlp83nmg38onp3bntizwoibu78t09r5/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // --- TinyMCE Initialization ---
@@ -253,7 +252,7 @@
         // --- Initial Data ---
         const existingOptions = @json($soal->questionOptions ?? []);
         const correctAnswers = existingOptions.filter(opt => opt.is_correct).map(opt => opt.id.toString());
-        
+
         // --- State ---
         let isSubmitting = false;
 
@@ -279,7 +278,7 @@
                     // Hide options container and show matching container
                     optionsContainer.style.display = 'none';
                     document.getElementById('matching-container').style.display = 'block';
-                    
+
                     // Load existing matching data
                     loadMatchingData();
                     return;
@@ -290,7 +289,7 @@
                 }
 
                 addOptionBtn.style.display = isTrueFalse ? 'none' : 'block';
-                
+
                 if (isTkp) {
                     infoText.textContent = 'Masukkan bobot nilai untuk setiap pilihan jawaban (0-100).';
                 } else {
@@ -300,10 +299,10 @@
                         infoText.textContent = isMultipleResponse ? 'Pilih satu atau lebih jawaban benar.' : 'Pilih satu jawaban benar.';
                     }
                 }
-                
+
                 // Hapus pilihan yang ada dan buat ulang
-                optionsList.innerHTML = ''; 
-                
+                optionsList.innerHTML = '';
+
                 if (isTrueFalse) {
                     // Otomatis buat pilihan Benar dan Salah
                     const trueOption = existingOptions.find(o => o.option_text && o.option_text.toLowerCase() === 'benar') || { id: `new_true`, option_text: 'Benar' };
@@ -332,14 +331,14 @@
             const type = questionType.value;
             const format = optionFormat.value;
             const index = optionsList.children.length;
-            
+
             const optionId = optionData.id || `new_${index}`;
             const optionText = optionData.option_text || '';
             const optionImage = optionData.option_image || null;
             const optionScore = optionData.score || 0;
 
             let checkboxHtml = '';
-            
+
             if (type === 'tkp') {
                 // For TKP questions, show score input instead of correct/incorrect checkbox
                 checkboxHtml = `
@@ -351,7 +350,7 @@
             } else {
                 const inputType = (type === 'multiple_choice' || type === 'true_false') ? 'radio' : 'checkbox';
                 const name = `correct_answer${inputType === 'checkbox' ? '[]' : ''}`;
-                
+
                 checkboxHtml = `
                     <div class="form-check pt-1 mr-3">
                         <input class="form-check-input correct-answer-input" type="${inputType}" name="${name}" value="${optionId}" ${isCorrect ? 'checked' : ''}>
@@ -410,7 +409,7 @@
             optionsList.innerHTML = ''; // Kosongkan daftar
             // Buat ulang dengan format baru
             currentOptions.forEach(optData => addOption({id: optData.id, option_text: optData.text, option_image: optData.image}, optData.isCorrect));
-            
+
             updateOptionNumbers();
             updateOptionHighlight();
         };
@@ -432,13 +431,13 @@
         const updateCorrectAnswerInfo = () => {
             const type = questionType.value;
             const infoContainer = document.getElementById('correct-answer-info');
-            
+
             if (type === 'tkp') {
                 // For TKP questions, show score summary
                 const scoreInputs = optionsList.querySelectorAll('input[name="option_scores[]"]');
                 let validScores = 0;
                 let totalScore = 0;
-                
+
                 scoreInputs.forEach(input => {
                     const value = parseInt(input.value);
                     if (!isNaN(value) && value >= 0 && value <= 100) {
@@ -446,7 +445,7 @@
                         totalScore += value;
                     }
                 });
-                
+
                 if (validScores > 0) {
                     infoContainer.classList.remove('alert-info');
                     infoContainer.classList.add('alert-success');
@@ -495,13 +494,13 @@
                 reader.readAsDataURL(file);
             }
         };
-        
+
         /** Menghapus preview gambar */
         const removeImagePreview = (input, previewContainer) => {
             input.value = '';
             previewContainer.style.display = 'none';
         };
-        
+
         /** Menampilkan notifikasi */
         const showAlert = (message, type = 'danger') => {
             const alertContainer = document.getElementById('alert-container');
@@ -516,7 +515,7 @@
             alertContainer.innerHTML = alert;
             window.scrollTo(0, 0);
         };
-        
+
         /** Validasi form sebelum submit */
         const validateForm = () => {
             let isValid = true;
@@ -554,21 +553,21 @@
                 errors.push('Minimal harus ada 2 pilihan jawaban.');
                 isValid = false;
             }
-            
+
             optionsList.querySelectorAll('.option-item').forEach(item => {
                 const textInput = item.querySelector('input[type="text"]');
                 const imageInput = item.querySelector('.option-image-input');
                 let itemValid = true;
 
                 if (textInput && textInput.required && !textInput.value.trim()) itemValid = false;
-                
+
                 // Cek apakah gambar diperlukan
                 const hasExistingImage = item.querySelector('.current-image');
                 if (imageInput && !imageInput.files[0] && !hasExistingImage) {
                     const oFormat = optionFormat.value;
                     if(oFormat === 'image' || oFormat === 'text_image') itemValid = false;
                 }
-                
+
                 if(!itemValid){
                     item.classList.add('is-invalid');
                     isValid = false;
@@ -583,14 +582,14 @@
                 // Validate TKP scores
                 const scoreInputs = optionsList.querySelectorAll('input[name="option_scores[]"]');
                 let hasValidScore = false;
-                
+
                 scoreInputs.forEach(input => {
                     const value = parseInt(input.value);
                     if (!isNaN(value) && value >= 0 && value <= 100) {
                         hasValidScore = true;
                     }
                 });
-                
+
                 if (!hasValidScore) {
                     errors.push('Anda harus mengisi bobot nilai untuk setidaknya satu pilihan jawaban (0-100).');
                     document.getElementById('correct-answer-info').classList.add('is-invalid');
@@ -601,17 +600,17 @@
                 const leftItems = document.querySelectorAll('input[name="left_items[]"]');
                 const rightItems = document.querySelectorAll('input[name="right_items[]"]');
                 const matches = document.querySelectorAll('select[name="matches[]"]');
-                
+
                 if (leftItems.length < 2) {
                     errors.push('Harus ada minimal 2 item di kolom kiri.');
                     isValid = false;
                 }
-                
+
                 if (rightItems.length < 2) {
                     errors.push('Harus ada minimal 2 pilihan di kolom kanan.');
                     isValid = false;
                 }
-                
+
                 // Check if all left items have text
                 leftItems.forEach(input => {
                     if (!input.value.trim()) {
@@ -619,7 +618,7 @@
                         isValid = false;
                     }
                 });
-                
+
                 // Check if all right items have text
                 rightItems.forEach(input => {
                     if (!input.value.trim()) {
@@ -627,7 +626,7 @@
                         isValid = false;
                     }
                 });
-                
+
                 // Check if all matches are selected
                 matches.forEach(select => {
                     if (!select.value) {
@@ -647,7 +646,7 @@
             if (!isValid) {
                 showAlert('<strong>Validasi Gagal!</strong><br><ul><li>' + errors.join('</li><li>') + '</li></ul>');
             }
-            
+
             return isValid;
         };
 
@@ -655,7 +654,7 @@
         questionFormat.addEventListener('change', updateQuestionFormatDisplay);
         questionType.addEventListener('change', handleQuestionTypeChange);
         optionFormat.addEventListener('change', transformOptions);
-        
+
         addOptionBtn.addEventListener('click', () => addOption());
 
         questionImageInput.addEventListener('change', () => handleImagePreview(questionImageInput, imagePreview, previewImg));
@@ -693,7 +692,7 @@
                     showAlert('Minimal harus ada 2 item di kolom kiri.', 'warning');
                 }
             }
-            
+
             if (e.target.closest('.remove-right-item-btn')) {
                 if (document.querySelectorAll('.right-item').length > 2) {
                     e.target.closest('.right-item').remove();
@@ -710,7 +709,7 @@
                 updateOptionHighlight();
             }
         });
-        
+
         form.addEventListener('submit', e => {
             e.preventDefault();
             if (isSubmitting) return;
@@ -731,27 +730,27 @@
         const loadMatchingData = () => {
             const leftItemsList = document.getElementById('left-items-list');
             const rightItemsList = document.getElementById('right-items-list');
-            
+
             // Clear existing items
             leftItemsList.innerHTML = '';
             rightItemsList.innerHTML = '';
-            
+
             // Filter left and right items from existing options
             const leftItems = existingOptions.filter(opt => opt.option_label && opt.option_label.startsWith('L'));
             const rightItems = existingOptions.filter(opt => opt.option_label && opt.option_label.startsWith('R'));
-            
+
             // Load left items
             leftItems.forEach(item => {
                 const matchKey = item.option_key; // This should contain which R item it matches (e.g., 'R1', 'R2')
                 const matchIndex = matchKey ? parseInt(matchKey.substring(1)) - 1 : null;
                 addMatchingLeftItem(item.option_text, matchIndex);
             });
-            
-            // Load right items  
+
+            // Load right items
             rightItems.forEach(item => {
                 addMatchingRightItem(item.option_text);
             });
-            
+
             // If no items exist, create defaults
             if (leftItems.length === 0 && rightItems.length === 0) {
                 for (let i = 0; i < 2; i++) {
@@ -759,7 +758,7 @@
                     addMatchingRightItem();
                 }
             }
-            
+
             updateMatchingNumbers();
         };
 
@@ -779,9 +778,9 @@
                     </button>
                 </div>
             `;
-            
+
             document.getElementById('left-items-list').appendChild(leftItemDiv);
-            
+
             // Set the selected match if provided
             if (matchIndex !== null) {
                 const select = leftItemDiv.querySelector('select');
@@ -802,7 +801,7 @@
                     </button>
                 </div>
             `;
-            
+
             document.getElementById('right-items-list').appendChild(rightItemDiv);
         };
 
@@ -824,12 +823,12 @@
             document.querySelectorAll('.left-item select').forEach(select => {
                 const currentValue = select.value || select.getAttribute('data-match-index');
                 select.innerHTML = '<option value="">Pilih pasangan</option>';
-                
+
                 rightOptions.forEach(option => {
                     const selected = currentValue == option.value ? 'selected' : '';
                     select.innerHTML += `<option value="${option.value}" ${selected}>${option.label}</option>`;
                 });
-                
+
                 // Remove the data attribute after setting
                 select.removeAttribute('data-match-index');
             });

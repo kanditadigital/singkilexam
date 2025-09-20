@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
             $table->string('employee_name');
+            $table->string('email')->nullable();
             $table->string('username')->unique();
             $table->string('password');
             $table->string('pass_text');

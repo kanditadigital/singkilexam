@@ -110,7 +110,7 @@ class SesiController extends Controller
             'title' => 'Edit Sesi Ujian',
             'sesi' => ExamSession::find($id)->load('exam', 'subject'),
             'exam' => Exam::where('exam_status', 'Active')->get(),
-            'subject' => Subject::all(),
+            'subjects' => Subject::all(),
         ]);
     }
 

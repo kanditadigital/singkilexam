@@ -88,7 +88,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         toast('Anda berhasil logout', 'success');
-        return redirect('/');
+        return redirect('/bro-login');
     }
 
     /**

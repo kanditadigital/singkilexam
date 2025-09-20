@@ -13,12 +13,16 @@ use App\Http\Controllers\Office\SoalController;
 use App\Http\Controllers\Std\ExamController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/admin',[AuthController::class, 'formSignIn'])->name('admin');
+Route::get('/',[AuthController::class, 'formSignIn'])->name('login');
 Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin.form');
 Route::post('/signin',[AuthController::class, 'signIn'])->name('signin');
 
-Route::get('/',[AuthController::class, 'formSignParticipate'])->name('login');
-Route::post('/signparticipate',[AuthController::class, 'signParticipate'])->name('signparticipate');
+
+/**
+ * Login Siswa dan Guru Menggunakan Exambrowser
+ */
+Route::get('/bro-login',[AuthController::class, 'formSignParticipate'])->name('bro.login');
+Route::post('/bro-auth',[AuthController::class, 'signParticipate'])->name('bro.auth');
 Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
 
 Route::prefix('disdik')->middleware('auth')->group(function(){
@@ -39,4 +43,12 @@ Route::prefix('disdik')->middleware('auth')->group(function(){
 
 Route::prefix('std')->middleware(['auth:students'])->group(function(){
     Route::get('/confirmation',[ExamController::class, 'index'])->name('std.confirmation');
+    Route::post('/checktoken', [ExamController::class, 'checkToken'])->name('std.checktoken');
+    Route::get('/exam/{token}', [ExamController::class, 'showExam'])->name('std.exam');
+    Route::post('/exam/{token}/answer', [ExamController::class, 'saveAnswer'])->name('std.answer');
+    Route::post('/exam/{token}/finish', [ExamController::class, 'finish'])->name('std.finish');
+    Route::get('/exam/{token}/finished', [ExamController::class, 'finished'])->name('std.finished');
+    // AJAX endpoints
+    Route::get('/exam/{token}/question', [ExamController::class, 'getQuestion'])->name('std.question.fetch');
+    Route::get('/exam/{token}/statuses', [ExamController::class, 'getStatuses'])->name('std.question.statuses');
 });

@@ -17,6 +17,8 @@ class Employee extends Authenticatable
         'branch_id',
         'school_id',
         'employee_name',
+        'email',
+        'employee_phone',
         'username',
         'password',
         'pass_text',

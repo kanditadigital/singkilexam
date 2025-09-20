@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Exam;
 use App\Models\ExamSession;
-use App\Models\Question_option;
+use App\Models\QuestionOption;
 use App\Models\Subject;
 
 class Question extends Model
@@ -38,6 +38,6 @@ class Question extends Model
 
     public function questionOptions()
     {
-        return $this->hasMany(Question_option::class);
+        return $this->hasMany(QuestionOption::class);
     }
 }

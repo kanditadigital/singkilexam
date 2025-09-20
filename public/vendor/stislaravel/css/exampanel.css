@@ -1,0 +1,73 @@
+*{
+    padding: 0;
+    margin: 0;
+}
+body{
+    background-color: aliceblue;
+}
+.btn-exam-danger{
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #ff5968;
+    color: #FFFFFF;
+}
+.btn-exam-danger:hover{
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #f14f5c;
+    color: #FFFFFF;
+}
+.btn-information{
+    border-radius: 50px;
+    background-color: #3093d0;
+    color: #FFFFFF;
+    font-size: 14px;
+}
+.btn-information:hover{
+    border-radius: 50px;
+    background-color: #2886c1;
+    color: #FFFFFF;
+    font-size: 14px;
+}
+.btn-ragu{
+    border-radius: 50px;
+    background-color: #efb908;
+    color: #000000;
+    font-size: 14px;
+}
+.btn-ragu:hover{
+    border-radius: 50px;
+    background-color: #efb908;
+    color: #000000;
+    font-size: 14px;
+}
+.btn-selesai{
+    border-radius: 50px;
+    background-color: #5CB338;
+    color: #FFFFFF;
+    font-size: 14px;
+}
+.btn-selesai:hover{
+    border-radius: 50px;
+    background-color: #519d31;
+    color: #FFFFFF;
+    font-size: 14px;
+}
+.timer-information{
+    border-radius: 50px;
+    background-color: #FFFFFF;
+    color: #666666;
+    font-size: 14px;
+    border: 1px solid #f4f1f1;
+}
+.exam-navbar{
+    background-color: #3093d0;
+    min-height: 12dvh;
+    margin-bottom: 20px;
+}
+
+.exam-content .card{
+    border: 0 !important;
+}

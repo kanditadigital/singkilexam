@@ -74,15 +74,21 @@ class PegawaiController extends Controller
             'employee_name'     => 'required',
             'email'             => 'required|email|unique:employees',
             'employee_type'     => 'required',
+            'employee_phone'    => 'nullable|string',
         ]);
+
+        // Generate one password and reuse for plain + hashed (model will hash)
+        $rawPassword = $this->kanditaService->generatePassword();
 
         Employee::create([
             'branch_id'         => $request->branch_id,
             'school_id'         => $request->school_id,
             'employee_name'     => $request->employee_name,
             'email'             => $request->email,
-            'password'          => Hash::make($this->kanditaService->generatePassword()),
-            'pass_text'         => $this->kanditaService->generatePassword(),
+            'employee_phone'    => $request->employee_phone,
+            'username'          => $request->email, // set username from email
+            'password'          => $rawPassword,
+            'pass_text'         => $rawPassword,
             'employee_type'     => $request->employee_type,
         ]);
 
@@ -121,6 +127,7 @@ class PegawaiController extends Controller
             'employee_name'     => 'required',
             'email'             => 'required|email|unique:employees,email,' . $id,
             'employee_type'     => 'required',
+            'employee_phone'    => 'nullable|string',
         ]);
 
         Employee::where('id', $id)->update([
@@ -128,6 +135,7 @@ class PegawaiController extends Controller
             'school_id'         => $request->school_id,
             'employee_name'     => $request->employee_name,
             'email'             => $request->email,
+            'employee_phone'    => $request->employee_phone,
             'employee_type'     => $request->employee_type,
         ]);
 

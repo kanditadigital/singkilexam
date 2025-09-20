@@ -43,6 +43,7 @@
     <script src="{{ asset('vendor/stislaravel/js/jquery.nicescroll.min.js') }}"></script>
     <script src="{{ asset('vendor/stislaravel/js/stisla.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tiny.cloud/1/9xs1wwpbsgxm69hod0co0bhs7u8rfrqrozq4cfki9kkp7c1b/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     @stack('scripts')
 </body>
 </html>

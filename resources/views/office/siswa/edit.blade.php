@@ -10,7 +10,7 @@
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('siswa.update', $siswa->id) }}" method="post">
+                <form action="{{ route('siswa.update', $siswa->id) }}" method="post" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="form-group row">

@@ -3,9 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Question;
 
-class Question_option extends Model
+class QuestionOption extends Model
 {
     protected $fillable = [
         'question_id',

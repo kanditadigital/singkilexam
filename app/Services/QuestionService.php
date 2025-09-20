@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Question;
-use App\Models\Question_option;
+use App\Models\QuestionOption;
 
 class QuestionService
 {
@@ -15,7 +15,7 @@ class QuestionService
 
     public function createQuestionOption($request)
     {
-        $questionOption = Question_option::create($request->all());
+        $questionOption = QuestionOption::create($request->all());
         return $questionOption;
     }
 }

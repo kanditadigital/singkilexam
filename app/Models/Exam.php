@@ -16,13 +16,8 @@ class Exam extends Model
         'exam_status',
     ];
 
-    public function examSessions()
+    public function sessions()
     {
-        return $this->hasMany(ExamSession::class);
-    }
-
-    public function questions()
-    {
-        return $this->hasMany(Question::class);
+        return $this->hasMany(ExamSession::class, 'exam_id', 'id');
     }
 }

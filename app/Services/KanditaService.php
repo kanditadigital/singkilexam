@@ -27,11 +27,14 @@ class KanditaService
      */
     public function generateExamCode()
     {
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
         $randomExamCode = '';
-        for ($i = 0; $i < 5; $i++) {
-            $randomExamCode .= $characters[rand(0, strlen($characters) - 1)];
+        $maxIndex = strlen($characters) - 1;
+
+        for ($i = 0; $i < 8; $i++) {
+            $randomExamCode .= $characters[random_int(0, $maxIndex)];
         }
+
         return $randomExamCode;
     }
 }

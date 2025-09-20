@@ -15,6 +15,7 @@
     @include('std.navbar')
 
     <div class="container">
+        @include('sweetalert::alert')
         @yield('content')
     </div>
 

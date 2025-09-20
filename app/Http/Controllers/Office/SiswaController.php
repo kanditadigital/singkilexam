@@ -76,16 +76,25 @@ class SiswaController extends Controller
             'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
+        // Handle photo upload
+        $photoPath = null;
+        if ($request->hasFile('student_photo')) {
+            $photoPath = $request->file('student_photo')->store('student_photos', 'public');
+        }
+
+        // Generate password once
+        $rawPassword = $this->kanditaService->generatePassword();
+
         Student::create([
             'branch_id'         => $request->branch_id,
             'school_id'         => $request->school_id,
             'student_name'      => $request->student_name,
             'student_nisn'      => $request->student_nisn,
             'username'          => $request->student_nisn,
-            'password'          => Hash::make($this->kanditaService->generatePassword()),
-            'pass_text'         => $this->kanditaService->generatePassword(),
+            'password'          => Hash::make($rawPassword),
+            'pass_text'         => $rawPassword,
             'student_gender'    => $request->student_gender,
-            'student_photo'     => $request->student_photo,
+            'student_photo'     => $photoPath,
         ]);
 
         toast('Siswa berhasil ditambahkan', 'success');
@@ -126,15 +135,20 @@ class SiswaController extends Controller
             'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        Student::where('id', $id)->update([
+        $data = [
             'branch_id'         => $request->branch_id,
             'school_id'         => $request->school_id,
             'student_name'      => $request->student_name,
             'username'          => $request->student_nisn,
             'student_nisn'      => $request->student_nisn,
             'student_gender'    => $request->student_gender,
-            'student_photo'     => $request->student_photo,
-        ]);
+        ];
+
+        if ($request->hasFile('student_photo')) {
+            $data['student_photo'] = $request->file('student_photo')->store('student_photos', 'public');
+        }
+
+        Student::where('id', $id)->update($data);
 
         toast('Siswa berhasil diubah', 'success');
         return redirect()->route('siswa.index');

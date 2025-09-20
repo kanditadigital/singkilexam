@@ -28,13 +28,8 @@ class ExamSession extends Model
         return $this->belongsTo(Exam::class);
     }
 
-    public function questions()
-    {
-        return $this->hasMany(Question::class);
-    }
-
     public function subject()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 }

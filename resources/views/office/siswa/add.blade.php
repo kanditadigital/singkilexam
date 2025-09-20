@@ -10,7 +10,7 @@
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('siswa.store') }}" method="post">
+                <form action="{{ route('siswa.store') }}" method="post" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group row">
                         <div class="col-md-6">

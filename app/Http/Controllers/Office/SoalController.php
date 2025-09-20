@@ -8,7 +8,7 @@ use App\Models\Question;
 use Illuminate\Support\Str;
 use App\Models\Exam;
 use App\Models\ExamSession;
-use App\Models\Question_option;
+use App\Models\QuestionOption;
 use App\Models\Subject;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -76,11 +76,22 @@ class SoalController extends Controller
             'question_category' => 'required|in:Literasi,Numerasi,Teknis,Pedagogik,TKP',
             'question_type' => 'required|in:multiple_choice,true_false,multiple_response,tkp,matching',
             'question_format' => 'required|in:text,image,text_image',
-            'option_format' => 'required|in:text,image,text_image',
         ];
+        // option_format tidak wajib untuk matching atau TF grid
+        if ($request->question_type === 'matching' || ($request->question_type === 'true_false' && $request->has('tf_statements'))) {
+            $rules['option_format'] = 'nullable|in:text,image,text_image';
+        } else {
+            $rules['option_format'] = 'required|in:text,image,text_image';
+        }
         
-        // Only require options for non-matching questions
-        if ($request->question_type !== 'matching') {
+        // Options/Statements requirement by type
+        if ($request->question_type === 'matching') {
+            // handled below
+        } elseif ($request->question_type === 'true_false' && $request->has('tf_statements')) {
+            $rules['tf_statements'] = 'required|array|min:1';
+            $rules['tf_statements.*'] = 'required|string';
+            $rules['tf_correct'] = 'required|array|min:1';
+        } else {
             $rules['options'] = 'required|array|min:2';
         }
 
@@ -111,7 +122,7 @@ class SoalController extends Controller
             $rules['right_items.*'] = 'required|string|max:255';
             $rules['matches'] = 'required|array|min:2';
             $rules['matches.*'] = 'required|integer|min:0';
-        } else {
+        } elseif (!($request->question_type === 'true_false' && $request->has('tf_statements'))) {
             $rules['correct_answer'] = 'required';
         }
 
@@ -135,7 +146,7 @@ class SoalController extends Controller
             'question_type' => $request->question_type,
             'question_category' => $request->question_category,
             'question_format' => $request->question_format,
-            'option_format' => $request->option_format,
+            'option_format' => $request->option_format ?? 'text',
             'question_image' => $questionImagePath,
             'slug' => $slug,
         ]);
@@ -155,7 +166,7 @@ class SoalController extends Controller
 
                 $score = $request->option_scores[$index] ?? 0;
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => $optionLabels[$index] ?? chr(65 + $index), // A, B, C, D, etc.
                     'option_key' => 'option_' . ($index + 1),
@@ -175,7 +186,7 @@ class SoalController extends Controller
             foreach ($leftItems as $index => $leftText) {
                 $correctMatch = isset($matches[$index]) ? 'R' . ($matches[$index] + 1) : null;
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => 'L' . ($index + 1),
                     'option_key' => $correctMatch, // Store which right item this left item matches
@@ -188,7 +199,7 @@ class SoalController extends Controller
             
             // Create right items (matching options)
             foreach ($rightItems as $index => $rightText) {
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => 'R' . ($index + 1),
                     'option_key' => 'right_option',
@@ -196,6 +207,22 @@ class SoalController extends Controller
                     'option_image' => null,
                     'is_correct' => false,
                     'score' => 0,
+                ]);
+            }
+        } elseif ($request->question_type === 'true_false' && $request->has('tf_statements')) {
+            // True/False grid statements: each statement is an option with is_correct meaning TRUE is correct
+            $statements = $request->input('tf_statements', []);
+            $corrects = $request->input('tf_correct', []); // values 'true' or 'false'
+            foreach ($statements as $i => $text) {
+                $isTrue = isset($corrects[$i]) && in_array($corrects[$i], ['true', '1', 1, true], true);
+                QuestionOption::create([
+                    'question_id' => $question->id,
+                    'option_label' => 'P' . ($i + 1),
+                    'option_key' => 'statement_' . ($i + 1),
+                    'option_text' => $text,
+                    'option_image' => null,
+                    'is_correct' => $isTrue,
+                    'score' => $isTrue ? 1 : 0,
                 ]);
             }
         } else {
@@ -221,7 +248,7 @@ class SoalController extends Controller
                     $optionLabel = $optionLabels[$index] ?? chr(65 + $index); // A, B, C, D, etc.
                 }
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => $optionLabel,
                     'option_key' => 'option_' . ($index + 1),
@@ -282,9 +309,21 @@ class SoalController extends Controller
             'question_category' => 'required|in:Literasi,Numerasi,Teknis,Pedagogik,TKP',
             'question_type' => 'required|in:multiple_choice,true_false,multiple_response,tkp,matching',
             'question_format' => 'required|in:text,image,text_image',
-            'option_format' => 'required|in:text,image,text_image',
-            'options' => 'required|array|min:2',
         ];
+        if ($request->question_type === 'matching' || ($request->question_type === 'true_false' && $request->has('tf_statements'))) {
+            $rules['option_format'] = 'nullable|in:text,image,text_image';
+        } else {
+            $rules['option_format'] = 'required|in:text,image,text_image';
+        }
+        if ($request->question_type === 'matching') {
+            // no options rule here
+        } elseif ($request->question_type === 'true_false' && $request->has('tf_statements')) {
+            $rules['tf_statements'] = 'required|array|min:1';
+            $rules['tf_statements.*'] = 'required|string';
+            $rules['tf_correct'] = 'required|array|min:1';
+        } else {
+            $rules['options'] = 'required|array|min:2';
+        }
 
         // Add conditional validation based on question format
         if ($request->question_format === 'text' || $request->question_format === 'text_image') {
@@ -313,7 +352,7 @@ class SoalController extends Controller
             $rules['right_items.*'] = 'required|string|max:255';
             $rules['matches'] = 'required|array|min:2';
             $rules['matches.*'] = 'required|integer|min:0';
-        } else {
+        } elseif (!($request->question_type === 'true_false' && $request->has('tf_statements'))) {
             $rules['correct_answer'] = 'required';
         }
 
@@ -340,7 +379,7 @@ class SoalController extends Controller
             'question_type' => $request->question_type,
             'question_category' => $request->question_category,
             'question_format' => $request->question_format,
-            'option_format' => $request->option_format,
+            'option_format' => $request->option_format ?? 'text',
             'question_image' => $questionImagePath,
             'slug' => $slug,
         ]);
@@ -372,7 +411,7 @@ class SoalController extends Controller
                 $optionText = is_array($optionData) ? ($optionData['text'] ?? null) : $optionData;
                 $score = $request->option_scores[$optionIndex] ?? 0;
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => $optionLabels[$optionIndex] ?? chr(65 + $optionIndex), // A, B, C, D, etc.
                     'option_key' => 'option_' . ($optionIndex + 1),
@@ -394,7 +433,7 @@ class SoalController extends Controller
             foreach ($leftItems as $index => $leftText) {
                 $correctMatch = isset($matches[$index]) ? 'R' . ($matches[$index] + 1) : null;
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => 'L' . ($index + 1),
                     'option_key' => $correctMatch, // Store which right item this left item matches
@@ -407,7 +446,7 @@ class SoalController extends Controller
             
             // Create right items (matching options)
             foreach ($rightItems as $index => $rightText) {
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => 'R' . ($index + 1),
                     'option_key' => 'right_option',
@@ -416,6 +455,23 @@ class SoalController extends Controller
                     'is_correct' => false,
                     'score' => 0,
                 ]);
+            }
+        } elseif ($request->question_type === 'true_false' && $request->has('tf_statements')) {
+            $statements = $request->input('tf_statements', []);
+            $corrects = $request->input('tf_correct', []);
+            $optionIndex = 0;
+            foreach ($statements as $i => $text) {
+                $isTrue = isset($corrects[$i]) && in_array($corrects[$i], ['true', '1', 1, true], true);
+                QuestionOption::create([
+                    'question_id' => $question->id,
+                    'option_label' => 'P' . ($i + 1),
+                    'option_key' => 'statement_' . ($i + 1),
+                    'option_text' => $text,
+                    'option_image' => null,
+                    'is_correct' => $isTrue,
+                    'score' => $isTrue ? 1 : 0,
+                ]);
+                $optionIndex++;
             }
         } else {
             // For other question types, use the existing logic
@@ -444,7 +500,7 @@ class SoalController extends Controller
                     $optionLabel = $optionLabels[$optionIndex] ?? chr(65 + $optionIndex); // A, B, C, D, etc.
                 }
                 
-                Question_option::create([
+                QuestionOption::create([
                     'question_id' => $question->id,
                     'option_label' => $optionLabel,
                     'option_key' => 'option_' . ($optionIndex + 1),
