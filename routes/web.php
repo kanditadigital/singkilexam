@@ -10,10 +10,24 @@ use App\Http\Controllers\Office\SiswaController;
 use App\Http\Controllers\Office\SesiController;
 use App\Http\Controllers\Office\MapelController;
 use App\Http\Controllers\Office\SoalController;
+use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Std\ExamController;
 use Illuminate\Support\Facades\Route;
+use Mews\Captcha\CaptchaController;
 
-Route::get('/',[AuthController::class, 'formSignIn'])->name('login');
+// Site
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('captcha/{config?}', [CaptchaController::class, 'getCaptcha']);
+Route::get('/refresh-captcha', function () {
+    return response()->json(['captcha' => captcha_src('flat')]);
+});
+
+
+Route::post('/login-sch',[AuthController::class, 'schoolAuth'])->name('login.sch');
+
+
+Route::get('/login',[AuthController::class, 'formSignIn'])->name('login');
 Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin.form');
 Route::post('/signin',[AuthController::class, 'signIn'])->name('signin');
 
@@ -25,8 +39,8 @@ Route::get('/bro-login',[AuthController::class, 'formSignParticipate'])->name('b
 Route::post('/bro-auth',[AuthController::class, 'signParticipate'])->name('bro.auth');
 Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
 
+Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard');
 Route::prefix('disdik')->middleware('auth')->group(function(){
-    Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard');
     Route::resource('cabdin', CabdinController::class);
     Route::resource('sekolah', SekolahController::class);
     Route::resource('pegawai', PegawaiController::class);

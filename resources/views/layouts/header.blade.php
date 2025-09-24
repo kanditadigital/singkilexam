@@ -9,10 +9,10 @@
         <li class="dropdown">
             <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
                 <div class="d-sm-none d-lg-inline-block">
-                    @if(auth()->user()->name)
+                    @if(auth()->user())
                         {{ auth()->user()->name }}
-                    @else
-                        {{ auth()->user()->email }}
+                    @elseif(Auth::guard('schools')->user())
+                        {{ Auth::guard('schools')->user()->school_name }}
                     @endif
                 </div>
             </a>

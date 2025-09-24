@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\Branch;
+use App\Services\EmployeeService;
 use Yajra\DataTables\Facades\DataTables;
 use App\Services\KanditaService;
 use Illuminate\Support\Facades\Hash;
@@ -13,10 +14,12 @@ use Illuminate\Support\Facades\Hash;
 class PegawaiController extends Controller
 {
     protected $kanditaService;
+    protected $employeeService;
 
-    public function __construct(KanditaService $kanditaService)
+    public function __construct(KanditaService $kanditaService, EmployeeService $employeeService)
     {
         $this->kanditaService = $kanditaService;
+        $this->employeeService = $employeeService;
     }
     /**
      * Display a listing of the resource.

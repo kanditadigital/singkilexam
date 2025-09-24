@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\Employee;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class School extends Model
+class School extends Authenticatable
 {
+    use HasFactory, Notifiable;
+    
     protected $fillable = [
         'branch_id',
         'school_npsn',

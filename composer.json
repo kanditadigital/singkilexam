@@ -13,6 +13,7 @@
         "kandita/stislaravel": "^1.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "mews/captcha": "^3.4",
         "predis/predis": "^3.2",
         "realrashid/sweet-alert": "^7.3",
         "yajra/laravel-datatables-oracle": "^12.0"

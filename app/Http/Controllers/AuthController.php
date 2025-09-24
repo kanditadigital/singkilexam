@@ -41,12 +41,45 @@ class AuthController extends Controller
 
         if(Auth::attempt($credentials)){
             $request->session()->regenerate();
-            return redirect()->intended('/disdik/dashboard');
+            return redirect()->intended('/dashboard');
         }else{
             toast('Anda gagal login', 'error');
             return redirect()->back();
         }
     }
+
+    /**
+     * Auth School
+     */
+    public function schoolAuth(Request $request)
+    {
+        // validasi input + captcha
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+            'captcha'  => 'required|captcha'
+        ], [
+            'captcha.captcha' => 'Kode keamanan salah, coba lagi.'
+        ]);
+
+        // proses login via guard schools
+        if (Auth::guard('schools')->attempt(
+            $request->only('email', 'password'),
+            $request->boolean('remember')
+        )) {
+            $request->session()->regenerate();
+            return redirect()->intended('/dashboard');
+        }
+
+        // kalau gagal login
+        return back()
+            ->withErrors([
+                'email' => 'Email atau password salah.',
+            ])
+            ->onlyInput('email')
+            ->with('toast', ['type' => 'error', 'message' => 'Anda gagal login']);
+    }
+
 
     public function signParticipate(Request $request)
     {
