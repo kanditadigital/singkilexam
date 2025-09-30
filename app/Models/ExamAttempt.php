@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ExamAttempt extends Model
 {
     protected $fillable = [
-        'student_id',
+        'participant_type',
+        'participant_id',
         'exam_id',
         'exam_session_id',
         'status',
@@ -20,9 +22,9 @@ class ExamAttempt extends Model
         'submitted_at' => 'datetime',
     ];
 
-    public function student()
+    public function participant(): MorphTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->morphTo();
     }
 
     public function exam()

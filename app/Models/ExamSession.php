@@ -23,6 +23,11 @@ class ExamSession extends Model
         'session_status',
     ];
 
+    protected $casts = [
+        'session_start_time' => 'datetime',
+        'session_end_time' => 'datetime',
+    ];
+
     public function exam()
     {
         return $this->belongsTo(Exam::class);

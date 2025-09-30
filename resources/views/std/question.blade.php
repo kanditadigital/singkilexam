@@ -9,10 +9,16 @@
         }
     }
 
-    $options = $question->questionOptions;
+    if (!$question->relationLoaded('questionOptions') && method_exists($question, 'load')) {
+        $question->load('questionOptions');
+    }
+
+    $options = collect($question->questionOptions ?? []);
     if (is_array($attemptQuestion->options_order) && count($attemptQuestion->options_order) > 0) {
         $orderMap = array_flip($attemptQuestion->options_order);
-        $options = $options->sortBy(fn($opt) => $orderMap[$opt->id] ?? PHP_INT_MAX);
+        $options = $options
+            ->sortBy(fn($opt) => $orderMap[$opt->id] ?? PHP_INT_MAX)
+            ->values();
     }
 
     $isMultiple   = $question->question_type === 'multiple_response';
@@ -47,7 +53,7 @@
     $answeredCount = $answeredCount ?? 0;
 @endphp
 
-<form action="{{ route('std.answer', $token) }}" method="POST" class="question-form">
+<form action="{{ route('std.answer', ['token' => $token, 'session' => $sessionId]) }}" method="POST" class="question-form">
     @csrf
     <input type="hidden" name="index" value="{{ $index }}">
 

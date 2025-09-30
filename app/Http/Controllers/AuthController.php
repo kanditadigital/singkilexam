@@ -91,11 +91,14 @@ class AuthController extends Controller
         if (Auth::guard('students')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended('std/confirmation');
-        }else{
-            toast('Anda gagal login', 'error');
-            return redirect()->back();
         }
 
+        if (Auth::guard('employees')->attempt($credentials, $request->filled('remember'))) {
+            $request->session()->regenerate();
+            return redirect()->intended('std/confirmation');
+        }
+
+        toast('Anda gagal login', 'error');
         return back()->withErrors([
             'username' => 'Username atau password salah.',
         ])->onlyInput('username');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Std;
 
+use App\Models\Employee;
+use App\Models\ExamParticipant;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -23,15 +25,92 @@ class ExamController extends Controller
     }
 
     /**
+     * Resolve the currently authenticated participant across supported guards.
+     *
+     * @return array{guard:string,id:int,name:string|null,gender:?string,class:string,user:object}
+     */
+    private function resolveParticipant(): array
+    {
+        $guards = [
+            'students' => [
+                'class' => Student::class,
+                'name_field' => 'student_name',
+                'gender_field' => 'student_gender',
+            ],
+            'employees' => [
+                'class' => Employee::class,
+                'name_field' => 'employee_name',
+                'gender_field' => null,
+            ],
+        ];
+
+        foreach ($guards as $guard => $meta) {
+            if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                return [
+                    'guard' => $guard,
+                    'id' => (int) data_get($user, 'id'),
+                    'name' => data_get($user, $meta['name_field']),
+                    'gender' => $meta['gender_field'] ? data_get($user, $meta['gender_field']) : null,
+                    'class' => $meta['class'],
+                    'user' => $user,
+                ];
+            }
+        }
+
+        abort(403, 'Peserta belum terotentikasi');
+    }
+
+    private function participantAttemptQuery(Exam $exam, array $participant, ?int $sessionId = null)
+    {
+        $query = ExamAttempt::where('exam_id', $exam->id)
+            ->where('participant_type', $participant['class'])
+            ->where('participant_id', $participant['id']);
+
+        if ($sessionId !== null) {
+            $query->where('exam_session_id', $sessionId);
+        }
+
+        return $query;
+    }
+
+    /**
      * Cek Data Peserta dan Token
      * @return \Illuminate\Http\Response
      */
     public function index()
     {
-        $data = ExamSession::with(['exam', 'subject'])->first();
+        $participant = $this->resolveParticipant();
+
+        $sessionQuery = ExamSession::with(['exam', 'subject'])
+            ->orderBy('session_start_time');
+
+        $activeSessions = collect();
+        $availableSessions = collect();
+
+        if ($participant['guard'] === 'students') {
+            $examIds = ExamParticipant::where('student_id', $participant['id'])->pluck('exam_id');
+
+            if ($examIds->isNotEmpty()) {
+                $sessionQuery->whereIn('exam_id', $examIds);
+                $activeSessions = (clone $sessionQuery)->where('session_status', 'Active')->get();
+                $availableSessions = $activeSessions->isNotEmpty()
+                    ? $activeSessions
+                    : $sessionQuery->get();
+            }
+        } else {
+            $activeSessions = (clone $sessionQuery)->where('session_status', 'Active')->get();
+            $availableSessions = $activeSessions->isNotEmpty()
+                ? $activeSessions
+                : $sessionQuery->get();
+        }
+
         return view('std.confirmation', [
             'title' => 'Exam Confirmation',
-            'data' => $data
+            'sessions' => $availableSessions,
+            'hasActiveSessions' => $activeSessions->isNotEmpty(),
+            'participant' => $participant,
+            'participantLabel' => $participant['guard'] === 'students' ? 'Siswa' : 'Guru/Staff',
         ]);
     }
 
@@ -42,25 +121,44 @@ class ExamController extends Controller
      */
     public function checkToken(Request $request)
     {
-        $request->validate([
-            'confirm_student_name' => 'required',
-            'exam_token'           => 'required'
+        $participant = $this->resolveParticipant();
+
+        $validated = $request->validate([
+            'confirm_participant_name' => 'required|string',
+            'exam_token' => 'required|string',
+            'exam_session_id' => 'required|integer|exists:exam_sessions,id',
         ]);
 
-        $cekStudent = Student::where('student_name', $request->confirm_student_name)->first();
-        $cekToken = Exam::where('exam_code', $request->exam_token)->first();
+        $session = ExamSession::with('exam')->findOrFail($validated['exam_session_id']);
+        $exam = Exam::where('exam_code', $validated['exam_token'])->first();
 
-        if ($cekStudent) {
-            if ($cekToken) {
-                return redirect()->route('std.exam', $cekToken->exam_code);
-            } else {
-                toast('Token tidak ditemukan')->error();
-                return back();
-            }
-        } else {
-            toast('Nama peserta tidak sesuai')->error();
+        if (!$exam || $exam->id !== $session->exam_id) {
+            toast('Token tidak ditemukan', 'error');
             return back();
         }
+
+        if ($participant['guard'] === 'students') {
+            $isRegistered = ExamParticipant::where('exam_id', $exam->id)
+                ->where('student_id', $participant['id'])
+                ->exists();
+
+            if (!$isRegistered) {
+                toast('Anda belum terdaftar sebagai peserta ujian ini', 'error');
+                return back();
+            }
+        }
+
+        $inputName = trim((string) $validated['confirm_participant_name']);
+        $actualName = trim((string) ($participant['name'] ?? ''));
+        if (strcasecmp($inputName, $actualName) !== 0) {
+            toast('Nama peserta tidak sesuai', 'error');
+            return back();
+        }
+
+        return redirect()->route('std.exam', [
+            'token' => $exam->exam_code,
+            'session' => $session->id,
+        ]);
     }
 
     /**
@@ -69,43 +167,72 @@ class ExamController extends Controller
      * @param string $token
      * @return \Illuminate\Http\Response
      */
-    public function showExam($token)
+    public function showExam($token, Request $request)
     {
-        // Get logged in student
-        $student = Auth::guard('students')->user();
-
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
 
-        // Collect active sessions (fallback to all sessions if none active)
-        $sessions = ExamSession::with(['subject' => function ($q) {
-                $q->with('questions.questionOptions');
-            }])
-            ->where('exam_id', $exam->id)
-            ->where('session_status', 'Active')
-            ->get();
+        if ($participant['guard'] === 'students') {
+            $isRegistered = ExamParticipant::where('exam_id', $exam->id)
+                ->where('student_id', $participant['id'])
+                ->exists();
 
-        if ($sessions->isEmpty()) {
-            $sessions = ExamSession::with(['subject' => function ($q) {
-                    $q->with('questions.questionOptions');
-                }])
+            if (!$isRegistered) {
+                toast('Anda belum terdaftar pada ujian ini', 'error');
+                return redirect()->route('std.confirmation');
+            }
+        }
+
+        $requestedSessionId = (int) $request->query('session', 0);
+        $session = null;
+
+        if ($requestedSessionId > 0) {
+            $session = ExamSession::with(['subject.questions.questionOptions'])
                 ->where('exam_id', $exam->id)
-                ->get();
+                ->find($requestedSessionId);
+
+            if (!$session) {
+                toast('Sesi ujian tidak ditemukan untuk token ini', 'error');
+                return redirect()->route('std.confirmation');
+            }
         }
 
-        if ($sessions->isEmpty()) {
+        if (!$session) {
+            $existingAttempt = $this->participantAttemptQuery($exam, $participant)->latest('id')->first();
+            if ($existingAttempt) {
+                $session = ExamSession::with(['subject.questions.questionOptions'])
+                    ->find($existingAttempt->exam_session_id);
+            }
+        }
+
+        if (!$session) {
+            $session = ExamSession::with(['subject.questions.questionOptions'])
+                ->where('exam_id', $exam->id)
+                ->where('session_status', 'Active')
+                ->orderBy('session_start_time')
+                ->first();
+        }
+
+        if (!$session) {
+            $session = ExamSession::with(['subject.questions.questionOptions'])
+                ->where('exam_id', $exam->id)
+                ->orderBy('session_start_time')
+                ->first();
+        }
+
+        if (!$session) {
             toast('Belum ada sesi untuk ujian ini', 'error');
-            return redirect()->back();
+            return redirect()->route('std.confirmation');
         }
 
-        // Use first session as primary for attempt metadata
-        $primarySession = $sessions->first();
+        $session->loadMissing(['subject.questions.questionOptions']);
 
-        // Ensure attempt exists
         $attempt = ExamAttempt::firstOrCreate(
             [
-                'student_id' => $student->id,
+                'participant_type' => $participant['class'],
+                'participant_id' => $participant['id'],
                 'exam_id' => $exam->id,
-                'exam_session_id' => $primarySession->id,
+                'exam_session_id' => $session->id,
             ],
             [
                 'status' => 'in_progress',
@@ -114,37 +241,29 @@ class ExamController extends Controller
         );
 
         if ($attempt->status === 'submitted') {
-            return redirect()->route('std.finished', $token);
+            return redirect()->route('std.finished', [
+                'token' => $token,
+                'session' => $session->id,
+            ]);
         }
 
-        // Seed attempt questions if none
         if ($attempt->questions()->count() === 0) {
-            // Gather all questions from the collected sessions' subjects
-            $allQuestions = collect();
-            foreach ($sessions as $sess) {
-                if ($sess->subject) {
-                    $allQuestions = $allQuestions->merge($sess->subject->questions);
-                }
-            }
-            // Remove duplicates by question id
-            $allQuestions = $allQuestions->unique('id')->values();
+            $questions = optional($session->subject)->questions ?? collect();
 
-            // Randomize questions if any session sets random_question to Y
-            $randomQuestion = $sessions->contains(function ($s) { return $s->random_question === 'Y'; });
-            if ($randomQuestion) {
-                $allQuestions = $allQuestions->shuffle();
+            if ($session->random_question === 'Y') {
+                $questions = $questions->shuffle();
             }
 
-            DB::transaction(function () use ($attempt, $allQuestions, $sessions) {
-                $randomAnswer = $sessions->contains(function ($s) { return $s->random_answer === 'Y'; });
-                foreach ($allQuestions as $idx => $q) {
-                    $options = $q->questionOptions()->get();
-                    if ($randomAnswer) {
+            DB::transaction(function () use ($attempt, $questions, $session) {
+                foreach ($questions as $idx => $question) {
+                    $options = $question->questionOptions;
+                    if ($session->random_answer === 'Y') {
                         $options = $options->shuffle();
                     }
+
                     ExamAttemptQuestion::create([
                         'exam_attempt_id' => $attempt->id,
-                        'question_id' => $q->id,
+                        'question_id' => $question->id,
                         'order_index' => $idx + 1,
                         'options_order' => $options->pluck('id')->values()->toArray(),
                     ]);
@@ -152,14 +271,20 @@ class ExamController extends Controller
             });
         }
 
-        $sessionIds = $sessions->pluck('id')->map('intval')->unique()->values()->all();
+        if ($attempt->questions()->count() === 0) {
+            toast('Belum ada soal untuk sesi yang dipilih', 'error');
+            return redirect()->route('std.confirmation');
+        }
+
+        $sessionIds = [$session->id];
         $this->cacheService()->storeAttemptSessionIds($attempt->id, $sessionIds);
         $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
 
-        // Current index
-        $index = max(1, (int) request()->query('q', 1));
+        $index = max(1, (int) $request->query('q', 1));
         $total = $attempt->questions()->count();
-        if ($index > $total) { $index = $total; }
+        if ($index > $total) {
+            $index = $total;
+        }
 
         $attemptQuestion = $attempt->questions()
             ->where('order_index', $index)
@@ -174,7 +299,7 @@ class ExamController extends Controller
         return view('std.exam', [
             'title' => 'Exam',
             'exam' => $exam,
-            'session' => $primarySession,
+            'session' => $session,
             'attempt' => $attempt,
             'attemptQuestion' => $attemptQuestion,
             'index' => $index,
@@ -182,6 +307,8 @@ class ExamController extends Controller
             'token' => $token,
             'answeredCount' => $answeredCount,
             'questionStatuses' => $statuses,
+            'participant' => $participant,
+            'participantLabel' => $participant['guard'] === 'students' ? 'Siswa' : 'Guru/Staff',
         ]);
     }
 
@@ -195,13 +322,24 @@ class ExamController extends Controller
             'action' => 'required|in:next,prev,flag,save,save-multi',
         ]);
 
-        $student = Auth::guard('students')->user();
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
-        $attempt = ExamAttempt::where('student_id', $student->id)
-            ->where('exam_id', $exam->id)
+        $sessionId = (int) $request->query('session', 0);
+        if ($sessionId <= 0) {
+            abort(404, 'Sesi ujian tidak ditemukan');
+        }
+
+        $attempt = $this->participantAttemptQuery($exam, $participant, $sessionId)
             ->where('status', 'in_progress')
             ->latest('id')
             ->firstOrFail();
+
+        if ($attempt->status === 'submitted') {
+            return redirect()->route('std.finished', [
+                'token' => $token,
+                'session' => $attempt->exam_session_id,
+            ]);
+        }
 
         $index = (int) $request->input('index');
         $total = $attempt->questions()->count();
@@ -212,11 +350,7 @@ class ExamController extends Controller
             ->where('order_index', $index)
             ->firstOrFail();
 
-        $sessionIds = $this->cacheService()->getAttemptSessionIds($attempt->id);
-        if (empty($sessionIds) && $attempt->exam_session_id) {
-            $sessionIds = [$attempt->exam_session_id];
-        }
-
+        $sessionIds = [$attempt->exam_session_id];
         $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
         $this->cacheService()->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
         $this->cacheService()->applyCachedAnswer($attemptQuestion);
@@ -280,7 +414,11 @@ class ExamController extends Controller
             if ($request->ajax()) {
                 return response()->json(['ok' => true, 'index' => $index]);
             }
-            return redirect()->route('std.exam', [$token, 'q' => $index]);
+            return redirect()->route('std.exam', [
+                'token' => $token,
+                'session' => $attempt->exam_session_id,
+                'q' => $index,
+            ]);
         }
 
         // Navigate
@@ -294,7 +432,11 @@ class ExamController extends Controller
         if ($request->ajax()) {
             return response()->json(['ok' => true, 'index' => $nextIndex]);
         }
-        return redirect()->route('std.exam', [$token, 'q' => $nextIndex]);
+        return redirect()->route('std.exam', [
+            'token' => $token,
+            'session' => $attempt->exam_session_id,
+            'q' => $nextIndex,
+        ]);
     }
 
     /**
@@ -302,18 +444,33 @@ class ExamController extends Controller
      */
     public function finish(Request $request, $token)
     {
-        $student = Auth::guard('students')->user();
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
-        $attempt = ExamAttempt::where('student_id', $student->id)
-            ->where('exam_id', $exam->id)
+        $sessionId = (int) $request->query('session', 0);
+        if ($sessionId <= 0) {
+            abort(404, 'Sesi ujian tidak ditemukan');
+        }
+
+        $attempt = $this->participantAttemptQuery($exam, $participant, $sessionId)
             ->latest('id')
             ->firstOrFail();
+
+        if ($attempt->status === 'submitted') {
+            return redirect()->route('std.finished', [
+                'token' => $token,
+                'session' => $attempt->exam_session_id,
+            ]);
+        }
 
         $statuses = $this->cacheService()->getStatuses($attempt);
         $firstUnanswered = collect($statuses)->firstWhere('answered', false);
         if ($firstUnanswered && !$request->boolean('force')) {
             toast('Masih ada soal belum terjawab', 'error');
-            return redirect()->route('std.exam', [$token, 'q' => $firstUnanswered['order_index']]);
+            return redirect()->route('std.exam', [
+                'token' => $token,
+                'session' => $attempt->exam_session_id,
+                'q' => $firstUnanswered['order_index'],
+            ]);
         }
 
         // Ensure cached answers are persisted before grading
@@ -510,21 +667,35 @@ class ExamController extends Controller
         ]);
 
         toast('Ujian berhasil diselesaikan', 'success');
-        return redirect()->route('std.finished', $token);
+        return redirect()->route('std.finished', [
+            'token' => $token,
+            'session' => $attempt->exam_session_id,
+        ]);
     }
 
-    public function finished($token)
+    public function finished($token, Request $request)
     {
-        $student = Auth::guard('students')->user();
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
-        $attempt = ExamAttempt::where('student_id', $student->id)
-            ->where('exam_id', $exam->id)
-            ->latest('id')
-            ->first();
+        $sessionId = (int) $request->query('session', 0);
+
+        $attemptQuery = $this->participantAttemptQuery($exam, $participant, $sessionId > 0 ? $sessionId : null)
+            ->latest('id');
+
+        $attempt = $attemptQuery->first();
 
         if (!$attempt || $attempt->status !== 'submitted') {
-            return redirect()->route('std.exam', $token);
+            if ($attempt) {
+                return redirect()->route('std.exam', [
+                    'token' => $token,
+                    'session' => $attempt->exam_session_id,
+                ]);
+            }
+
+            return redirect()->route('std.confirmation');
         }
+
+        $attempt->loadMissing('session.subject');
 
         $grade = ExamGrade::where('exam_attempt_id', $attempt->id)->first();
 
@@ -534,6 +705,8 @@ class ExamController extends Controller
             'attempt' => $attempt,
             'grade' => $grade,
             'token' => $token,
+            'sessionId' => $attempt->exam_session_id,
+            'participantLabel' => $participant['guard'] === 'students' ? 'Siswa' : 'Guru/Staff',
         ]);
     }
 
@@ -542,14 +715,24 @@ class ExamController extends Controller
      */
     public function getQuestion(Request $request, $token)
     {
-        $student = Auth::guard('students')->user();
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
-        $attempt = ExamAttempt::where('student_id', $student->id)
-            ->where('exam_id', $exam->id)
+        $sessionId = (int) $request->query('session', 0);
+        if ($sessionId <= 0) {
+            abort(404, 'Sesi ujian tidak ditemukan');
+        }
+
+        $attempt = $this->participantAttemptQuery($exam, $participant, $sessionId)
             ->latest('id')
             ->firstOrFail();
+
         if ($attempt->status === 'submitted') {
-            return response()->json(['redirect' => route('std.finished', $token)], 200);
+            return response()->json([
+                'redirect' => route('std.finished', [
+                    'token' => $token,
+                    'session' => $attempt->exam_session_id,
+                ]),
+            ], 200);
         }
 
         $index = max(1, (int) $request->query('q', 1));
@@ -560,11 +743,7 @@ class ExamController extends Controller
             ->where('order_index', $index)
             ->firstOrFail();
 
-        $sessionIds = $this->cacheService()->getAttemptSessionIds($attempt->id);
-        if (empty($sessionIds) && $attempt->exam_session_id) {
-            $sessionIds = [$attempt->exam_session_id];
-        }
-
+        $sessionIds = [$attempt->exam_session_id];
         $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
         $this->cacheService()->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
         $this->cacheService()->applyCachedAnswer($attemptQuestion);
@@ -578,6 +757,7 @@ class ExamController extends Controller
             'total' => $total,
             'token' => $token,
             'answeredCount' => $answeredCount,
+            'sessionId' => $attempt->exam_session_id,
         ])->render();
 
         return response()->json([
@@ -591,12 +771,16 @@ class ExamController extends Controller
     /**
      * AJAX: get question statuses (answered/flagged) for modal list
      */
-    public function getStatuses($token)
+    public function getStatuses($token, Request $request)
     {
-        $student = Auth::guard('students')->user();
+        $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
-        $attempt = ExamAttempt::where('student_id', $student->id)
-            ->where('exam_id', $exam->id)
+        $sessionId = (int) $request->query('session', 0);
+        if ($sessionId <= 0) {
+            abort(404, 'Sesi ujian tidak ditemukan');
+        }
+
+        $attempt = $this->participantAttemptQuery($exam, $participant, $sessionId)
             ->latest('id')
             ->firstOrFail();
 

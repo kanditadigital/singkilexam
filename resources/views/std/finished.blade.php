@@ -8,6 +8,9 @@
                     <div class="card-body p-5 text-center">
                         <h3 class="mb-3">Ujian Selesai</h3>
                         <p class="text-muted mb-2">Terima kasih telah menyelesaikan ujian: <strong>{{ $exam->exam_name }}</strong>.</p>
+                        @if(optional($attempt->session->subject)->subject_name)
+                            <p class="mb-3">Mata Ujian: <strong>{{ $attempt->session->subject->subject_name }}</strong></p>
+                        @endif
                         @if($grade)
                             @php
                                 $correct = (int) ($grade->correct_questions ?? 0);

@@ -17,7 +17,7 @@
     <nav class="exam-navbar navbar navbar-dark bg-dark shadow-sm mb-3 px-3">
         <span class="navbar-brand mb-0 h6">EXAMDITA</span>
         <div class="ml-auto text-white">
-            <p class="mt-3 mb-0">{{ Auth::guard('students')->user()->student_name }}</p>
+            <p class="mt-3 mb-0">{{ $participant['name'] }}</p>
         </div>
     </nav>
 
@@ -47,6 +47,7 @@
                                 'total' => $total,
                                 'token' => $token,
                                 'answeredCount' => $answeredCount,
+                                'sessionId' => $attempt->exam_session_id,
                             ])
                         </div>
                     </div>
@@ -87,7 +88,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
-                    <form action="{{ route('std.finish', $token) }}" method="POST" class="d-inline">
+                    <form action="{{ route('std.finish', ['token' => $token, 'session' => $attempt->exam_session_id]) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-success">Ya, Selesaikan</button>
                     </form>
@@ -108,7 +109,7 @@
 
         // Refresh daftar soal
         function refreshQuestionList() {
-            $.get(@json(route('std.question.statuses', $token)))
+            $.get(@json(route('std.question.statuses', ['token' => $token, 'session' => $attempt->exam_session_id])))
                 .done(function(list) {
                     const $wrap = $('#question-list-content').empty();
                     const isArray = Array.isArray(list);
@@ -186,7 +187,7 @@
         }
 
         function loadQuestion(index) {
-            $.get(@json(route('std.question.fetch', $token)), { q: index })
+            $.get(@json(route('std.question.fetch', ['token' => $token, 'session' => $attempt->exam_session_id])), { q: index })
                 .done(function(res){
                     if (res.redirect) return window.location.href = res.redirect;
                     $('#question-container').html(res.html);
@@ -246,7 +247,7 @@
             // serialize data form + tambahkan action
             const formData = serializeAnswer($form.serializeArray(), lastAction, true);
 
-            $.post(@json(route('std.answer', $token)), formData)
+            $.post(@json(route('std.answer', ['token' => $token, 'session' => $attempt->exam_session_id])), formData)
                 .done(function(res){
                     const currentIndex = parseInt($('#question-index').text(), 10);
                     const total = parseInt($('#question-total').text(), 10);
@@ -284,7 +285,7 @@
             const durationMinutes = {{ (int) ($session->session_duration ?? 0) }};
             const startedAtSec = {{ optional($attempt->started_at)->timestamp ?? now()->timestamp }};
             const startedAt = startedAtSec * 1000;
-            const finishForm = $('<form>', {method:'POST', action:@json(route('std.finish', $token))})
+            const finishForm = $('<form>', {method:'POST', action:@json(route('std.finish', ['token' => $token, 'session' => $attempt->exam_session_id]))})
                 .append($('<input>', {type:'hidden', name:'_token', value:@json(csrf_token())}))
                 .append($('<input>', {type:'hidden', name:'force', value:'1'}))
                 .appendTo('body');
@@ -311,7 +312,7 @@
         $(document).on('submit', '#confirmFinishModal form', function(e){
             e.preventDefault();
             const formEl = this;
-            $.get(@json(route('std.question.statuses', $token)))
+            $.get(@json(route('std.question.statuses', ['token' => $token, 'session' => $attempt->exam_session_id])))
                 .done(function(list){
                     const statuses = list || [];
                     const unanswered = statuses.filter(item => !item.answered);
@@ -378,7 +379,7 @@
                 window.__autoSaveRequest.abort();
             }
 
-            window.__autoSaveRequest = $.post(@json(route('std.answer', $token)), formData)
+            window.__autoSaveRequest = $.post(@json(route('std.answer', ['token' => $token, 'session' => $attempt->exam_session_id])), formData)
                 .done(function(res){
                     if (res && res.index) {
                         $('#question-index').text(res.index);
