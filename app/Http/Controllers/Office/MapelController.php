@@ -72,12 +72,12 @@ class MapelController extends Controller
     public function show(Request $request, string $id)
     {
         if ($request->ajax()) {
-            $data = Question::where('subject_id', $id)->get();
+            $data = Question::with('subject')->where('subject_id', $id);
 
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn("subject_name", function ($row) {
-                    return $row->subject->subject_name;
+                    return optional($row->subject)->subject_name ?? '-';
                 })
                 ->addColumn("action", function ($row) {
                     $editButton = '<button type="button" class="btn btn-outline-primary btn-sm edit ml-2" data-id="' . $row->id . '">
@@ -95,7 +95,7 @@ class MapelController extends Controller
         return view('office.soal.index',[
             'title' => 'Data Mata Pelajaran',
             'subject' => Subject::find($id),
-            'soal' => Question::where('subject_id', $id)->get(),
+            'subjectId' => $id,
         ]);
     }
 

@@ -115,7 +115,7 @@
                     </div>
 
                     <!-- Options Container -->
-                    <div id="options-container">
+                    <div id="options-container" style="display: none;">
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="mb-0">Pilihan Jawaban <span class="text-danger">*</span></label>
@@ -129,6 +129,31 @@
                         <div id="options-list">
                             <!-- Pilihan jawaban dinamis akan ditambahkan di sini -->
                         </div>
+                    </div>
+
+                    <!-- True/False Grid Container -->
+                    <div id="truefalse-container" style="display: none;">
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="mb-0">Pernyataan Benar/Salah <span class="text-danger">*</span></label>
+                            <button type="button" id="add-tf-row-btn" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i> Tambah Pernyataan
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Pernyataan</th>
+                                        <th class="text-center" style="width: 120px;">Benar</th>
+                                        <th class="text-center" style="width: 120px;">Salah</th>
+                                        <th class="text-center" style="width: 80px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tf-list"></tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted d-block mt-2">Setiap pernyataan harus memiliki jawaban Benar atau Salah.</small>
                     </div>
 
                     <!-- Matching Container -->
@@ -242,6 +267,11 @@
         const optionsList = document.getElementById('options-list');
         const addOptionBtn = document.getElementById('add-option-btn');
         const infoText = document.getElementById('info-text');
+        const correctAnswerInfo = document.getElementById('correct-answer-info');
+        const trueFalseContainer = document.getElementById('truefalse-container');
+        const tfList = document.getElementById('tf-list');
+        const addTfRowBtn = document.getElementById('add-tf-row-btn');
+        const matchingContainer = document.getElementById('matching-container');
         const questionImageInput = document.getElementById('question_image');
         const imagePreview = document.getElementById('image-preview');
         const previewImg = document.getElementById('preview-img');
@@ -252,6 +282,10 @@
         // --- Initial Data ---
         const existingOptions = @json($soal->questionOptions ?? []);
         const correctAnswers = existingOptions.filter(opt => opt.is_correct).map(opt => opt.id.toString());
+        const hasTrueFalseGrid = existingOptions.some(opt => {
+            const label = (opt.option_label ?? '').toString().toLowerCase();
+            return label.startsWith('p');
+        });
 
         // --- State ---
         let isSubmitting = false;
@@ -268,54 +302,77 @@
         /** Mengatur tampilan berdasarkan tipe soal (pilihan ganda, benar/salah, dll) */
         const handleQuestionTypeChange = () => {
             const type = questionType.value;
-            if (type) {
-                const isMultipleResponse = type === 'multiple_response';
-                const isTrueFalse = type === 'true_false';
-                const isTkp = type === 'tkp';
-                const isMatching = type === 'matching';
+            const isMultipleResponse = type === 'multiple_response';
+            const isTrueFalse = type === 'true_false';
+            const isTkp = type === 'tkp';
+            const isMatching = type === 'matching';
+            const useTrueFalseGrid = isTrueFalse && (hasTrueFalseGrid || tfList.children.length > 0);
 
-                if (isMatching) {
-                    // Hide options container and show matching container
-                    optionsContainer.style.display = 'none';
-                    document.getElementById('matching-container').style.display = 'block';
+            // Reset containers
+            optionsContainer.style.display = 'none';
+            correctAnswerInfo.style.display = 'none';
+            trueFalseContainer.style.display = 'none';
+            matchingContainer.style.display = 'none';
 
-                    // Load existing matching data
-                    loadMatchingData();
-                    return;
-                } else {
-                    // Show options container and hide matching container
-                    optionsContainer.style.display = 'block';
-                    document.getElementById('matching-container').style.display = 'none';
-                }
-
-                addOptionBtn.style.display = isTrueFalse ? 'none' : 'block';
-
-                if (isTkp) {
-                    infoText.textContent = 'Masukkan bobot nilai untuk setiap pilihan jawaban (0-100).';
-                } else {
-                    if (isTrueFalse) {
-                        infoText.textContent = 'Pilih salah satu: Benar atau Salah.';
-                    } else {
-                        infoText.textContent = isMultipleResponse ? 'Pilih satu atau lebih jawaban benar.' : 'Pilih satu jawaban benar.';
-                    }
-                }
-
-                // Hapus pilihan yang ada dan buat ulang
-                optionsList.innerHTML = '';
-
-                if (isTrueFalse) {
-                    // Otomatis buat pilihan Benar dan Salah
-                    const trueOption = existingOptions.find(o => o.option_text && o.option_text.toLowerCase() === 'benar') || { id: `new_true`, option_text: 'Benar' };
-                    const falseOption = existingOptions.find(o => o.option_text && o.option_text.toLowerCase() === 'salah') || { id: `new_false`, option_text: 'Salah' };
-
-                    addOption(trueOption, correctAnswers.includes(trueOption.id.toString()), true);
-                    addOption(falseOption, correctAnswers.includes(falseOption.id.toString()), true);
-                } else {
-                    // Muat pilihan yang sudah ada dari database
-                    existingOptions.forEach(opt => addOption(opt, correctAnswers.includes(opt.id.toString())));
-                }
-
+            if (!type) {
+                return;
             }
+
+            if (isMatching) {
+                matchingContainer.style.display = 'block';
+                loadMatchingData();
+                return;
+            }
+
+            if (useTrueFalseGrid) {
+                trueFalseContainer.style.display = 'block';
+                if (tfList.children.length === 0) {
+                    loadTrueFalseGrid();
+                }
+                return;
+            }
+
+            // Default to options container
+            optionsContainer.style.display = 'block';
+            correctAnswerInfo.style.display = 'block';
+            addOptionBtn.style.display = isTrueFalse ? 'none' : 'block';
+
+            if (isTkp) {
+                infoText.textContent = 'Masukkan bobot nilai untuk setiap pilihan jawaban (0-100).';
+            } else if (isTrueFalse) {
+                infoText.textContent = 'Pilih salah satu: Benar atau Salah.';
+            } else if (isMultipleResponse) {
+                infoText.textContent = 'Pilih satu atau lebih jawaban benar.';
+            } else {
+                infoText.textContent = 'Pilih tepat satu jawaban benar.';
+            }
+
+            optionsList.innerHTML = '';
+
+            if (isTrueFalse) {
+                const trueOption = existingOptions.find(o => {
+                    const label = (o.option_label ?? '').toString().toLowerCase();
+                    const text = (o.option_text ?? '').toString().toLowerCase();
+                    return label === 'benar' || text === 'benar';
+                }) || { id: 'new_true', option_text: 'Benar' };
+
+                const falseOption = existingOptions.find(o => {
+                    const label = (o.option_label ?? '').toString().toLowerCase();
+                    const text = (o.option_text ?? '').toString().toLowerCase();
+                    return label === 'salah' || text === 'salah';
+                }) || { id: 'new_false', option_text: 'Salah' };
+
+                addOption(trueOption, correctAnswers.includes((trueOption.id ?? '').toString()), true);
+                addOption(falseOption, correctAnswers.includes((falseOption.id ?? '').toString()), true);
+            } else if (existingOptions.length) {
+                existingOptions.forEach(opt => addOption(opt, correctAnswers.includes(opt.id.toString())));
+            } else {
+                const defaultCount = isTkp ? 5 : 4;
+                for (let i = 0; i < defaultCount; i++) {
+                    addOption();
+                }
+            }
+
             updateOptionNumbers();
             updateCorrectAnswerInfo();
             updateOptionHighlight();
@@ -360,10 +417,18 @@
             }
 
             let contentHtml = '';
+            const derivedLabel = optionData.option_label || optionText || (isReadOnly ? (index === 0 ? 'Benar' : 'Salah') : '');
+
             if (format === 'text' || format === 'text_image') {
                 contentHtml += `<input type="text" name="options[${optionId}][text]" class="form-control mb-2" placeholder="Teks Pilihan Jawaban" value="${optionText}" ${isReadOnly ? 'readonly' : ''} required>`;
             }
             if (format === 'image' || format === 'text_image') {
+                if (format === 'image') {
+                    contentHtml += `<input type="hidden" name="options[${optionId}][keep]" value="1">`;
+                    if (derivedLabel) {
+                        contentHtml += `<div class="mb-2 font-weight-bold">${derivedLabel}</div>`;
+                    }
+                }
                 contentHtml += `<input type="file" name="options[${optionId}][image]" class="form-control option-image-input" accept="image/jpeg,image/jpg,image/png,image/gif,image/svg+xml">`;
                 if(optionImage) {
                     contentHtml += `
@@ -377,6 +442,7 @@
             const newOption = document.createElement('div');
             newOption.className = 'option-item mb-3 p-3 border rounded';
             newOption.dataset.id = optionId;
+            newOption.dataset.label = derivedLabel;
             newOption.innerHTML = `
                 <div class="d-flex align-items-start">
                     <div class="option-number font-weight-bold mr-3 pt-1">${index + 1}</div>
@@ -397,31 +463,109 @@
             // Simpan data yang ada di DOM
             optionsList.querySelectorAll('.option-item').forEach(item => {
                 const textInput = item.querySelector('input[type="text"]');
+                const optionId = item.dataset.id;
+                const existingOption = existingOptions.find(o => o.id.toString() === optionId);
+                const domLabel = item.dataset.label || '';
                 currentOptions.push({
-                    id: item.dataset.id,
+                    id: optionId,
                     text: textInput ? textInput.value : '',
+                    label: existingOption ? (existingOption.option_label ?? domLabel) : domLabel,
                     isCorrect: item.querySelector('.correct-answer-input').checked,
                     // Note: image file cannot be preserved, but existing image from server can
-                    image: existingOptions.find(o => o.id.toString() === item.dataset.id)?.option_image || null
+                    image: existingOption ? existingOption.option_image : null
                 });
             });
 
-            optionsList.innerHTML = ''; // Kosongkan daftar
-            // Buat ulang dengan format baru
-            currentOptions.forEach(optData => addOption({id: optData.id, option_text: optData.text, option_image: optData.image}, optData.isCorrect));
+        optionsList.innerHTML = ''; // Kosongkan daftar
+        // Buat ulang dengan format baru
+        currentOptions.forEach(optData => addOption({id: optData.id, option_text: optData.text, option_image: optData.image, option_label: optData.label}, optData.isCorrect));
 
-            updateOptionNumbers();
-            updateOptionHighlight();
-        };
+        updateOptionNumbers();
+        updateOptionHighlight();
+    };
+
+        /** Memuat pernyataan Benar/Salah ke tabel */
+        function loadTrueFalseGrid() {
+            tfList.innerHTML = '';
+            const statements = existingOptions.filter(opt => {
+                const label = (opt.option_label ?? '').toString().toLowerCase();
+                return label.startsWith('p');
+            });
+
+            if (statements.length > 0) {
+                statements.forEach(opt => addTfRow({
+                    text: opt.option_text || '',
+                    isTrue: !!opt.is_correct,
+                    image: opt.option_image || null
+                }));
+            } else {
+                addTfRow();
+                addTfRow();
+            }
+        }
+
+        /** Menambahkan baris pernyataan true/false */
+        function addTfRow(data = {}) {
+            const statementText = data.text || '';
+            const hasAnswer = Object.prototype.hasOwnProperty.call(data, 'isTrue');
+            const isTrue = hasAnswer ? !!data.isTrue : null;
+            const existingImage = data.image || '';
+
+            const row = document.createElement('tr');
+            row.classList.add('tf-row');
+
+            row.innerHTML = `
+                <td>
+                    <textarea name="tf_statements[]" class="form-control" rows="2" placeholder="Tulis pernyataan">${statementText}</textarea>
+                    <div class="mt-2">
+                        <input type="file" name="tf_statement_images[]" class="form-control tf-statement-image" accept="image/jpeg,image/jpg,image/png,image/gif,image/svg+xml">
+                        ${existingImage ? `
+                            <div class="mt-2 current-image">
+                                <img src="/storage/${existingImage}" class="img-thumbnail" style="max-width: 150px;">
+                                <small class="d-block text-muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
+                            </div>` : '<small class="text-muted">Opsional: unggah gambar untuk menggantikan teks.</small>'}
+                    </div>
+                </td>
+                <td class="text-center align-middle">
+                    <input type="radio" value="true">
+                </td>
+                <td class="text-center align-middle">
+                    <input type="radio" value="false">
+                </td>
+                <td class="text-center align-middle">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-tf-row" title="Hapus pernyataan">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            const radios = row.querySelectorAll('input[type="radio"]');
+            if (isTrue === true) {
+                radios[0].checked = true;
+            } else if (isTrue === false) {
+                radios[1].checked = true;
+            }
+
+            tfList.appendChild(row);
+            refreshTfRowIndexes();
+        }
+
+        /** Menyelaraskan indeks radio pada daftar true/false */
+        function refreshTfRowIndexes() {
+            tfList.querySelectorAll('.tf-row').forEach((row, index) => {
+                row.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.name = `tf_correct[${index}]`;
+                });
+            });
+        }
 
 
-        /** Memperbarui nomor urut pilihan jawaban */
+    /** Memperbarui nomor urut pilihan jawaban */
         const updateOptionNumbers = () => {
             optionsList.querySelectorAll('.option-item').forEach((item, index) => {
                 item.querySelector('.option-number').textContent = index + 1;
-                // Sembunyikan tombol hapus jika tipe soal Benar/Salah
                 const removeBtn = item.querySelector('.remove-option-btn');
-                if(removeBtn) {
+                if (removeBtn) {
                     removeBtn.style.display = questionType.value === 'true_false' ? 'none' : 'block';
                 }
             });
@@ -431,6 +575,14 @@
         const updateCorrectAnswerInfo = () => {
             const type = questionType.value;
             const infoContainer = document.getElementById('correct-answer-info');
+
+            if (type === 'true_false' && trueFalseContainer.style.display !== 'none') {
+                infoContainer.style.display = 'none';
+                infoContainer.classList.remove('alert-success', 'alert-info', 'is-invalid');
+                return;
+            }
+
+            infoContainer.style.display = 'block';
 
             if (type === 'tkp') {
                 // For TKP questions, show score summary
@@ -533,6 +685,10 @@
 
             // Validasi Konten Soal
             const qFormat = questionFormat.value;
+            const qType = questionType.value;
+            const isTrueFalseGridActive = qType === 'true_false' && trueFalseContainer.style.display !== 'none';
+            const shouldValidateOptions = optionsContainer.style.display !== 'none' && !isTrueFalseGridActive;
+            let hasOptionError = false;
             if ((qFormat === 'text' || qFormat === 'text_image') && tinymceEditor && tinymceEditor.getContent({ format: 'text' }).trim() === '') {
                 errors.push('Teks pertanyaan tidak boleh kosong.');
                 isValid = false;
@@ -549,35 +705,40 @@
             }
 
             // Validasi Pilihan Jawaban
-            if (optionsList.children.length < 2) {
+            if (shouldValidateOptions && optionsList.children.length < 2) {
                 errors.push('Minimal harus ada 2 pilihan jawaban.');
                 isValid = false;
+                hasOptionError = true;
             }
 
-            optionsList.querySelectorAll('.option-item').forEach(item => {
-                const textInput = item.querySelector('input[type="text"]');
-                const imageInput = item.querySelector('.option-image-input');
-                let itemValid = true;
+            if (shouldValidateOptions) {
+                optionsList.querySelectorAll('.option-item').forEach(item => {
+                    const textInput = item.querySelector('input[type="text"]');
+                    const imageInput = item.querySelector('.option-image-input');
+                    let itemValid = true;
 
-                if (textInput && textInput.required && !textInput.value.trim()) itemValid = false;
+                    if (textInput && textInput.required && !textInput.value.trim()) itemValid = false;
 
-                // Cek apakah gambar diperlukan
-                const hasExistingImage = item.querySelector('.current-image');
-                if (imageInput && !imageInput.files[0] && !hasExistingImage) {
-                    const oFormat = optionFormat.value;
-                    if(oFormat === 'image' || oFormat === 'text_image') itemValid = false;
-                }
+                    // Cek apakah gambar diperlukan
+                    const hasExistingImage = item.querySelector('.current-image');
+                    if (imageInput && !imageInput.files[0] && !hasExistingImage) {
+                        const oFormat = optionFormat.value;
+                        if (oFormat === 'image' || oFormat === 'text_image') itemValid = false;
+                    }
 
-                if(!itemValid){
-                    item.classList.add('is-invalid');
-                    isValid = false;
-                }
-            });
-            if (!isValid && !errors.includes('Setiap pilihan jawaban harus diisi.')) errors.push('Setiap pilihan jawaban harus diisi.');
+                    if (!itemValid) {
+                        item.classList.add('is-invalid');
+                        hasOptionError = true;
+                        isValid = false;
+                    }
+                });
+            }
+            if (shouldValidateOptions && hasOptionError && !errors.includes('Setiap pilihan jawaban harus diisi.')) {
+                errors.push('Setiap pilihan jawaban harus diisi.');
+            }
 
 
             // Validasi Jawaban Benar atau Bobot TKP atau Matching
-            const qType = questionType.value;
             if (qType === 'tkp') {
                 // Validate TKP scores
                 const scoreInputs = optionsList.querySelectorAll('input[name="option_scores[]"]');
@@ -634,7 +795,33 @@
                         isValid = false;
                     }
                 });
-            } else {
+            } else if (qType === 'true_false' && trueFalseContainer.style.display !== 'none') {
+                const rows = tfList.querySelectorAll('.tf-row');
+                if (rows.length === 0) {
+                    errors.push('Tambahkan minimal satu pernyataan Benar/Salah.');
+                    isValid = false;
+                }
+
+                rows.forEach(row => {
+                    const statement = row.querySelector('textarea[name="tf_statements[]"]');
+                    const radios = row.querySelectorAll('input[type="radio"]');
+                    const hasChecked = Array.from(radios).some(radio => radio.checked);
+
+                    if (!statement.value.trim()) {
+                        if (!errors.includes('Semua pernyataan Benar/Salah harus diisi.')) {
+                            errors.push('Semua pernyataan Benar/Salah harus diisi.');
+                        }
+                        isValid = false;
+                    }
+
+                    if (!hasChecked) {
+                        if (!errors.includes('Setiap pernyataan Benar/Salah harus memiliki jawaban yang dipilih.')) {
+                            errors.push('Setiap pernyataan Benar/Salah harus memiliki jawaban yang dipilih.');
+                        }
+                        isValid = false;
+                    }
+                });
+            } else if (shouldValidateOptions) {
                 // Validate correct answers for other question types
                 if (optionsList.querySelectorAll('.correct-answer-input:checked').length === 0) {
                     errors.push('Anda harus memilih setidaknya satu jawaban yang benar.');
@@ -656,6 +843,9 @@
         optionFormat.addEventListener('change', transformOptions);
 
         addOptionBtn.addEventListener('click', () => addOption());
+        if (addTfRowBtn) {
+            addTfRowBtn.addEventListener('click', () => addTfRow());
+        }
 
         questionImageInput.addEventListener('change', () => handleImagePreview(questionImageInput, imagePreview, previewImg));
         removeImageBtn.addEventListener('click', () => removeImagePreview(questionImageInput, imagePreview));
@@ -684,6 +874,15 @@
         document.getElementById('add-right-item-btn').addEventListener('click', () => addMatchingRightItem());
 
         document.addEventListener('click', e => {
+            if (e.target.closest('.remove-tf-row')) {
+                if (tfList.children.length > 1) {
+                    e.target.closest('.tf-row').remove();
+                    refreshTfRowIndexes();
+                } else {
+                    showAlert('Minimal harus ada satu pernyataan Benar/Salah.', 'warning');
+                }
+            }
+
             if (e.target.closest('.remove-left-item-btn')) {
                 if (document.querySelectorAll('.left-item').length > 2) {
                     e.target.closest('.left-item').remove();

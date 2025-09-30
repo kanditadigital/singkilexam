@@ -22,7 +22,7 @@
     </nav>
 
     {{-- Content --}}
-    <div class="exam-content">
+    <div class="exam-content mb-5">
         <div class="container-fluid">
             <div class="row">
                 <div class="col-12">
@@ -30,7 +30,6 @@
                     {{-- Header --}}
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
-                            <strong>No. Soal <span id="question-index">{{ $index }}</span>/<span id="question-total">{{ $total }}</span></strong>
                         </div>
                         <div>
                             <a href="#" class="btn btn-sm btn-info mr-2">Informasi Soal</a>
@@ -112,7 +111,20 @@
             $.get(@json(route('std.question.statuses', $token)))
                 .done(function(list) {
                     const $wrap = $('#question-list-content').empty();
-                    list.forEach(function(item){
+                    const isArray = Array.isArray(list);
+                    const total = isArray ? list.length : parseInt($('#meta-answered-total').text(), 10) || 0;
+                    let answeredCount = 0;
+                    const currentIndex = parseInt($('#question-index').text(), 10);
+                    let currentStatus = null;
+
+                    (isArray ? list : []).forEach(function(item){
+                        if (item.answered) {
+                            answeredCount++;
+                        }
+                        if (item.order_index === currentIndex) {
+                            currentStatus = item;
+                        }
+
                         const btnClass = item.flagged ? 'btn-warning' : (item.answered ? 'btn-success' : 'btn-secondary');
                         const $btn = $('<button/>', {
                             'class': 'btn '+btnClass+' m-1 question-goto',
@@ -122,10 +134,57 @@
                         });
                         $wrap.append($btn);
                     });
+
+                    if (isArray) {
+                        $('#meta-answered-current').text(answeredCount);
+                        $('#meta-answered-total').text(total);
+                    }
+
+                    const $statusBadge = $('#meta-status-badge');
+                    if ($statusBadge.length && currentStatus) {
+                        applyStatusBadge($statusBadge, currentStatus.flagged, currentStatus.answered);
+                    }
                 });
         }
 
-        // Load soal
+        function syncOptionCardSelection(context) {
+            const $ctx = context ? $(context) : $('#question-container');
+            $ctx.find('.option-card').each(function () {
+                const $card = $(this);
+                const $input = $card.find('.option-input');
+                if ($input.is(':checked')) {
+                    $card.addClass('is-selected');
+                } else {
+                    $card.removeClass('is-selected');
+                }
+            });
+        }
+
+        function applyStatusBadge($badge, isFlagged, isAnswered) {
+            $badge.removeClass('badge-warning text-dark badge-success badge-secondary');
+
+            if (isFlagged) {
+                $badge.addClass('badge-warning text-dark');
+                $badge.text('Ditandai ragu-ragu');
+                $badge.attr('data-flagged', '1');
+                $badge.attr('data-answered', isAnswered ? '1' : '0');
+                return;
+            }
+
+            if (isAnswered) {
+                $badge.addClass('badge-success');
+                $badge.text('Sudah dijawab');
+                $badge.attr('data-flagged', '0');
+                $badge.attr('data-answered', '1');
+                return;
+            }
+
+            $badge.addClass('badge-secondary');
+            $badge.text('Belum dijawab');
+            $badge.attr('data-flagged', '0');
+            $badge.attr('data-answered', '0');
+        }
+
         function loadQuestion(index) {
             $.get(@json(route('std.question.fetch', $token)), { q: index })
                 .done(function(res){
@@ -133,6 +192,9 @@
                     $('#question-container').html(res.html);
                     $('#question-index').text(res.index);
                     $('#question-total').text(res.total);
+                    syncOptionCardSelection('#question-container');
+                    refreshQuestionList();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
         }
 
@@ -141,6 +203,29 @@
         $(document).on('click', '.question-goto', function(){
             $('#questionListModal').modal('hide');
             loadQuestion($(this).data('index'));
+        });
+
+        // Visual feedback untuk pilihan + auto save
+        $(document).on('change', '#question-container .option-card .option-input', function(){
+            const $input = $(this);
+            const $card = $input.closest('.option-card');
+            if ($input.attr('type') === 'radio') {
+                const name = $input.attr('name');
+                $card.closest('.option-grid').find(`input[name="${name}"]`).each(function(){
+                    $(this).closest('.option-card').removeClass('is-selected');
+                });
+            }
+            $card.toggleClass('is-selected', $input.is(':checked'));
+
+            autoSaveAnswer($input.attr('type') === 'checkbox' ? 'save-multi' : 'save');
+        });
+
+        $(document).on('change', '#question-container select[name^="matching"]', function(){
+            autoSaveAnswer('save');
+        });
+
+        $(document).on('change', '#question-container input[name^="tf\\["]', function(){
+            autoSaveAnswer('save');
         });
 
         // Submit jawaban via AJAX
@@ -159,8 +244,7 @@
             const gotoIndexFromBtn = $form.data('goto-index');
 
             // serialize data form + tambahkan action
-            const formData = $form.serializeArray();
-            formData.push({name:'action', value:lastAction});
+            const formData = serializeAnswer($form.serializeArray(), lastAction, true);
 
             $.post(@json(route('std.answer', $token)), formData)
                 .done(function(res){
@@ -190,7 +274,6 @@
                     if (!target) target = currentIndex;
 
                     loadQuestion(target);
-                    refreshQuestionList();
                 });
         });
 
@@ -230,24 +313,85 @@
             const formEl = this;
             $.get(@json(route('std.question.statuses', $token)))
                 .done(function(list){
-                    const flagged = (list || []).filter(item => !!item.flagged);
+                    const statuses = list || [];
+                    const unanswered = statuses.filter(item => !item.answered);
+                    const flagged = statuses.filter(item => !!item.flagged);
+
+                    const goToQuestion = index => {
+                        $('#confirmFinishModal').modal('hide');
+                        loadQuestion(index);
+                    };
+
+                    if (unanswered.length > 0) {
+                        $('#confirmFinishModal').modal('hide');
+                        Swal.fire({
+                            title: 'Masih ada soal yang belum dijawab',
+                            text: 'Selesaikan terlebih dahulu soal yang belum dijawab.',
+                            icon: 'warning',
+                            confirmButtonText: 'Ke soal yang belum dijawab'
+                        }).then(() => goToQuestion(unanswered[0].order_index));
+                        return;
+                    }
+
                     if (flagged.length > 0) {
                         $('#confirmFinishModal').modal('hide');
                         Swal.fire({
-                            title: 'Masih ada soal ragu-ragu',
-                            text: 'Mohon selesaikan soal yang ditandai ragu-ragu terlebih dahulu.',
-                            icon: 'warning',
+                            title: 'Ada soal yang ditandai ragu-ragu',
+                            text: 'Ingin tetap menyelesaikan ujian sekarang?',
+                            icon: 'question',
                             showCancelButton: true,
-                            confirmButtonText: 'Ke soal ragu',
-                            cancelButtonText: 'Tutup'
+                            confirmButtonText: 'Tetap selesaikan',
+                            cancelButtonText: 'Lihat soal ragu'
                         }).then(result => {
-                            if (result.isConfirmed) loadQuestion(flagged[0].order_index);
+                            if (result.isConfirmed) {
+                                formEl.submit();
+                            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                goToQuestion(flagged[0].order_index);
+                            }
                         });
-                    } else {
-                        formEl.submit();
+                        return;
                     }
+
+                    formEl.submit();
                 });
         });
+
+        function serializeAnswer(formArray, actionValue, includeNavigation){
+            const data = formArray.filter(item => item.name !== 'action');
+            data.push({name: 'action', value: actionValue});
+
+            if (!includeNavigation && (actionValue === 'save' || actionValue === 'save-multi')) {
+                // Ensure we don't send navigation extras when autosaving
+                return data.filter(item => item.name !== 'goto-index');
+            }
+
+            return data;
+        }
+
+        function autoSaveAnswer(action){
+            const $form = $('#question-container form');
+            if ($form.length === 0) return;
+
+            const formData = serializeAnswer($form.serializeArray(), action, false);
+
+            if (window.__autoSaveRequest) {
+                window.__autoSaveRequest.abort();
+            }
+
+            window.__autoSaveRequest = $.post(@json(route('std.answer', $token)), formData)
+                .done(function(res){
+                    if (res && res.index) {
+                        $('#question-index').text(res.index);
+                    }
+                    refreshQuestionList();
+                })
+                .always(function(){
+                    window.__autoSaveRequest = null;
+                });
+        }
+
+        // Sinkronkan tampilan pilihan saat halaman pertama kali dimuat
+        syncOptionCardSelection('#question-container');
     </script>
 </body>
 </html>

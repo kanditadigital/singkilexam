@@ -1,7 +1,6 @@
 @php
-    $q = $attemptQuestion->question;
+    $question = $attemptQuestion->question;
 
-    // Decode jawaban hanya sekali
     $answerArray = [];
     if (!empty($attemptQuestion->answer)) {
         $decoded = json_decode($attemptQuestion->answer, true);
@@ -10,176 +9,244 @@
         }
     }
 
-    // Atur urutan opsi jika ada custom order
-    $options = $q->questionOptions;
+    $options = $question->questionOptions;
     if (is_array($attemptQuestion->options_order) && count($attemptQuestion->options_order) > 0) {
         $orderMap = array_flip($attemptQuestion->options_order);
         $options = $options->sortBy(fn($opt) => $orderMap[$opt->id] ?? PHP_INT_MAX);
     }
 
-    // Tipe soal
-    $isMultiple   = $q->question_type === 'multiple_response';
-    $isMatching   = $q->question_type === 'matching';
-    $isTrueFalse  = $q->question_type === 'true_false';
+    $isMultiple   = $question->question_type === 'multiple_response';
+    $isMatching   = $question->question_type === 'matching';
+    $isTrueFalse  = $question->question_type === 'true_false';
 
-    // Deteksi apakah True/False berupa grid
-    $labels       = $q->questionOptions->pluck('option_label')->map(fn($v) => (string)$v)->toArray();
-    $hasBenarSalah= in_array('Benar', $labels, true) || in_array('Salah', $labels, true);
-    $isTFGrid     = $isTrueFalse && (!$hasBenarSalah || $options->count() > 2);
+    $labels       = $question->questionOptions->pluck('option_label')->map(fn($v) => (string) $v)->toArray();
+    $hasTrueFalse = in_array('Benar', $labels, true) || in_array('Salah', $labels, true);
+    $isTFGrid     = $isTrueFalse && (!$hasTrueFalse || $options->count() > 2);
+
+    $rawAnswer = $attemptQuestion->answer;
+    $hasAnswer = $rawAnswer !== null
+        && trim($rawAnswer) !== ''
+        && trim($rawAnswer) !== '[]'
+        && trim($rawAnswer) !== '{}';
+
+    $flagged = (bool) $attemptQuestion->flagged;
+    $statusBadgeClass = 'badge-secondary';
+    $statusBadgeText = 'Belum dijawab';
+
+    if ($flagged) {
+        $statusBadgeClass = 'badge-warning text-dark';
+        $statusBadgeText = 'Ditandai ragu-ragu';
+    } elseif ($hasAnswer) {
+        $statusBadgeClass = 'badge-success';
+        $statusBadgeText = 'Sudah dijawab';
+    }
+
+    $flagButtonLabel = $flagged ? 'Hilangkan Tanda Ragu-ragu' : 'Tandai Ragu-ragu';
+    $flagButtonClass = $flagged ? 'btn-outline-warning' : 'btn-warning';
+
+    $answeredCount = $answeredCount ?? 0;
 @endphp
 
-<form action="{{ route('std.answer', $token) }}" method="POST">
+<form action="{{ route('std.answer', $token) }}" method="POST" class="question-form">
     @csrf
     <input type="hidden" name="index" value="{{ $index }}">
 
-    <div class="row">
-        {{-- Kolom soal --}}
-        <div class="col-md-7 border-right">
-            {{-- Gambar soal --}}
-            @if(in_array($q->question_format, ['image','text_image']) && $q->question_image)
-                <div class="mb-3 text-center">
-                    <img src="{{ asset('storage/'.$q->question_image) }}" alt="Soal" class="img-fluid">
-                </div>
-            @endif
-
-            {{-- Teks soal --}}
-            @if(in_array($q->question_format, ['text','text_image']))
-                <div class="question-text text-justify">
-                    {!! $q->question_text !!}
-                </div>
-            @endif
-        </div>
-
-        {{-- Kolom jawaban --}}
-        <div class="col-md-5">
-            <div class="mb-2">
-                <span class="badge {{ $attemptQuestion->flagged ? 'badge-warning' : 'badge-secondary' }}">
-                    {{ $attemptQuestion->flagged ? 'Ragu-ragu' : 'Belum ditandai' }}
+    <div class="question-meta card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="meta-item">
+                <span class="meta-label">Soal</span>
+                <span class="meta-value">
+                    <span id="meta-question-index">{{ $index }}</span>
+                    /
+                    <span id="meta-question-total">{{ $total }}</span>
                 </span>
             </div>
-
-            {{-- Soal Matching --}}
-            @if($isMatching)
-                @php
-                    $leftItems  = $q->questionOptions->filter(fn($o) => str_starts_with($o->option_label, 'L'));
-                    $rightItems = $q->questionOptions->filter(fn($o) => str_starts_with($o->option_label, 'R'));
-                @endphp
-                <div class="row font-weight-bold mb-2">
-                    <div class="col-md-6">Kiri</div>
-                    <div class="col-md-6">Pasangan</div>
-                </div>
-                @foreach($leftItems as $left)
-                    @php $sel = $answerArray[$left->option_label] ?? null; @endphp
-                    <div class="row align-items-center mb-2">
-                        <div class="col-md-6">
-                            {{ $left->option_label }}. {{ $left->option_text }}
-                        </div>
-                        <div class="col-md-6">
-                            <select name="matching[{{ $left->option_label }}]" class="form-control">
-                                <option value="">-- Pilih --</option>
-                                @foreach($rightItems as $right)
-                                    <option value="{{ $right->option_label }}" {{ $sel === $right->option_label ? 'selected' : '' }}>
-                                        {{ $right->option_label }}. {{ $right->option_text }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                @endforeach
-
-            {{-- Soal True/False Grid --}}
-            @elseif($isTFGrid)
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Pernyataan</th>
-                                <th class="text-center" style="width:110px">Benar</th>
-                                <th class="text-center" style="width:110px">Salah</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($options as $opt)
-                                @php $sel = $answerArray[$opt->id] ?? null; @endphp
-                                <tr>
-                                    <td>{!! nl2br(e($opt->option_text)) !!}</td>
-                                    <td class="text-center">
-                                        <input type="radio" id="tf_{{ $opt->id }}_true" name="tf[{{ $opt->id }}]" value="true"
-                                            {{ $sel === 'true' || $sel === true ? 'checked' : '' }}>
-                                        <label for="tf_{{ $opt->id }}_true"></label>
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="radio" id="tf_{{ $opt->id }}_false" name="tf[{{ $opt->id }}]" value="false"
-                                            {{ $sel === 'false' || $sel === false ? 'checked' : '' }}>
-                                        <label for="tf_{{ $opt->id }}_false"></label>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-            {{-- Soal Pilihan Ganda (single/multiple) --}}
-            @else
-                <div class="list-group">
-                    @foreach($options as $opt)
-                        @php
-                            $inputName = $isMultiple ? 'answer[]' : 'answer';
-                            $inputId   = "opt_{$opt->id}";
-                            $isChecked = in_array((string)$opt->id, array_map('strval',$answerArray), true);
-                        @endphp
-                        <div class="list-group-item">
-                            <input type="{{ $isMultiple ? 'checkbox' : 'radio' }}"
-                                   id="{{ $inputId }}"
-                                   name="{{ $inputName }}"
-                                   value="{{ $opt->id }}"
-                                   class="mr-2"
-                                   {{ $isChecked ? 'checked' : '' }}>
-                            <label for="{{ $inputId }}" class="ml-2">
-                                <strong>{{ $opt->option_label }}</strong><br>
-                                @if($opt->option_image)
-                                    <img src="{{ asset('storage/'.$opt->option_image) }}" alt="Opsi" class="img-fluid mb-2">
-                                @endif
-                                @if($opt->option_text)
-                                    <div>{!! nl2br(e($opt->option_text)) !!}</div>
-                                @endif
-                            </label>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+            <div class="meta-item">
+                <span class="meta-label">Sudah dijawab</span>
+                <span class="meta-value">
+                    <span id="meta-answered-current">{{ $answeredCount }}</span>
+                    /
+                    <span id="meta-answered-total">{{ $total }}</span>
+                </span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Modul</span>
+                <span
+                    id="meta-status-badge"
+                    class="badge badge-pill text-left px-0">
+                    {{ $question->question_category }}
+                </span>
+            </div>
         </div>
     </div>
 
-    {{-- Navigasi --}}
-    <div class="card mt-3">
-        <div class="d-flex justify-content-between p-3">
-          <button
-            name="action" value="prev" type="submit"
-            class="btn btn-secondary"
-            data-next-index="{{ max(1, $index - 1) }}"
-            {{ $index <= 1 ? 'disabled' : '' }}>
-            <i class="fas fa-arrow-left"></i> Sebelumnya
-          </button>
-      
-          <button name="action" value="flag" type="submit" class="btn btn-warning">
-            <i class="fas fa-flag"></i> Tandai Ragu-ragu
-          </button>
-      
-          @if(($answeredCount ?? 0) >= $total)
-            <button type="button" class="btn btn-success btn-finish-modal">
-              <i class="far fa-check-circle"></i> Selesaikan Ujian
-            </button>
-          @endif
-      
-          <button
-            name="action" value="next" type="submit"
-            class="btn btn-secondary"
-            data-next-index="{{ min($total, $index + 1) }}"
-            {{ $index >= $total ? 'disabled' : '' }}>
-            Selanjutnya <i class="fas fa-arrow-right"></i>
-          </button>
+    <div class="question-card card shadow-sm">
+        <div class="card-body">
+            <div class="question-layout row">
+                <div class="col-lg-6 question-content">
+                    @if(in_array($question->question_format, ['image','text_image']) && $question->question_image)
+                        <div class="question-media mb-3 text-center">
+                            <img src="{{ asset('storage/'.$question->question_image) }}" alt="Gambar soal" class="img-fluid question-image">
+                        </div>
+                    @endif
+
+                    @if(in_array($question->question_format, ['text','text_image']))
+                        <div class="question-text">
+                            {!! $question->question_text !!}
+                        </div>
+                    @endif
+                </div>
+
+                <div class="col-lg-6 answer-area">
+                    @if($isMatching)
+                        @php
+                            $leftItems  = $question->questionOptions->filter(fn($o) => str_starts_with($o->option_label, 'L'));
+                            $rightItems = $question->questionOptions->filter(fn($o) => str_starts_with($o->option_label, 'R'));
+                        @endphp
+                        <div class="matching-grid">
+                            <div class="matching-header mb-2">
+                                <div class="matching-col">Daftar</div>
+                                <div class="matching-col">Pasangkan dengan</div>
+                            </div>
+                            @foreach($leftItems as $left)
+                                @php $selected = $answerArray[$left->option_label] ?? ''; @endphp
+                                <div class="matching-row">
+                                    <div class="matching-col">
+                                        <span class="matching-label">{{ $left->option_label }}.</span>
+                                        <span>{!! nl2br(e($left->option_text)) !!}</span>
+                                    </div>
+                                    <div class="matching-col">
+                                        <select name="matching[{{ $left->option_label }}]" class="custom-select">
+                                            <option value="">Pilih jawaban</option>
+                                            @foreach($rightItems as $right)
+                                                <option value="{{ $right->option_label }}" {{ $selected === $right->option_label ? 'selected' : '' }}>
+                                                    {{ $right->option_label }}. {{ $right->option_text }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                    @elseif($isTFGrid)
+                        <div class="tf-grid table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Pernyataan</th>
+                                        <th class="text-center">Benar</th>
+                                        <th class="text-center">Salah</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($options as $opt)
+                                        @php $selected = $answerArray[$opt->id] ?? null; @endphp
+                                        <tr>
+                                            {{-- <td>{!! nl2br(e($opt->option_text)) !!}</td> --}}
+                                            <td>
+                                            {{-- Tampilkan teks jika ada --}}
+                                            @if(!empty($opt->option_text))
+                                                {!! nl2br(e($opt->option_text)) !!}
+                                            @endif
+
+                                            {{-- Tampilkan gambar jika ada --}}
+                                            @if(!empty($opt->option_image))
+                                                <br>
+                                                <img src="{{ asset('storage/'.$opt->option_image) }}"
+                                                    alt="Option Image"
+                                                    style="max-width: 200px; height:auto;">
+                                            @endif
+                                        </td>
+                                            <td class="text-center align-middle">
+                                                <label class="tf-option">
+                                                    <input type="radio" name="tf[{{ $opt->id }}]" value="true" {{ $selected === 'true' || $selected === true ? 'checked' : '' }}>
+                                                    <span>Benar</span>
+                                                </label>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <label class="tf-option">
+                                                    <input type="radio" name="tf[{{ $opt->id }}]" value="false" {{ $selected === 'false' || $selected === false ? 'checked' : '' }}>
+                                                    <span>Salah</span>
+                                                </label>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                    @else
+                        <div class="option-grid">
+                            @foreach($options as $opt)
+                                @php
+                                    $inputName = $isMultiple ? 'answer[]' : 'answer';
+                                    $checkedValues = array_map('strval', is_array($answerArray) ? $answerArray : [$answerArray]);
+                                    $isChecked = in_array((string) $opt->id, $checkedValues, true);
+                                @endphp
+                                <label class="option-card {{ $isChecked ? 'is-selected' : '' }}">
+                                    <input
+                                        type="{{ $isMultiple ? 'checkbox' : 'radio' }}"
+                                        name="{{ $inputName }}"
+                                        value="{{ $opt->id }}"
+                                        class="option-input"
+                                        {{ $isChecked ? 'checked' : '' }}
+                                    >
+                                    <span class="option-marker">{{ $opt->option_label }}</span>
+                                    <div class="option-content">
+                                        @if($opt->option_image)
+                                            <img src="{{ asset('storage/'.$opt->option_image) }}" alt="Pilihan {{ $opt->option_label }}" class="option-image">
+                                        @endif
+                                        @if($opt->option_text)
+                                            <div class="option-text">{!! nl2br(e($opt->option_text)) !!}</div>
+                                        @endif
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
-      </div>
-      
+    </div>
+
+    <div class="question-actions card shadow-sm mt-3">
+        <div class="card-body d-flex flex-wrap justify-content-between">
+            <button
+                type="submit"
+                name="action"
+                value="prev"
+                class="btn btn-primary btn-action"
+                data-next-index="{{ max(1, $index - 1) }}"
+                {{ $index <= 1 ? 'disabled' : '' }}
+            >
+                <i class="fas fa-arrow-left mr-1"></i> Soal Sebelumnya
+            </button>
+
+            <button
+                type="submit"
+                name="action"
+                value="flag"
+                class="btn {{ $flagButtonClass }} btn-action"
+                data-next-index="{{ $index }}"
+            >
+                <i class="fas fa-flag mr-1"></i> {{ $flagButtonLabel }}
+            </button>
+
+            <button type="button" class="btn btn-success btn-action btn-finish-modal">
+                <i class="far fa-check-circle mr-1"></i> Selesaikan Ujian
+            </button>
+
+            <button
+                type="submit"
+                name="action"
+                value="next"
+                class="btn btn-primary btn-action"
+                data-next-index="{{ min($total, $index + 1) }}"
+                {{ $index >= $total ? 'disabled' : '' }}
+            >
+                Soal Berikutnya <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </div>
 </form>

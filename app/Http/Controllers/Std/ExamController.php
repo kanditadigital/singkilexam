@@ -17,8 +17,9 @@ use App\Services\ExamCacheService;
 
 class ExamController extends Controller
 {
-    public function __construct(private readonly ExamCacheService $cacheService)
+    private function cacheService(): ExamCacheService
     {
+        return app(ExamCacheService::class);
     }
 
     /**
@@ -152,8 +153,8 @@ class ExamController extends Controller
         }
 
         $sessionIds = $sessions->pluck('id')->map('intval')->unique()->values()->all();
-        $this->cacheService->storeAttemptSessionIds($attempt->id, $sessionIds);
-        $this->cacheService->ensureSessionQuestionsCached($exam->id, $sessionIds);
+        $this->cacheService()->storeAttemptSessionIds($attempt->id, $sessionIds);
+        $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
 
         // Current index
         $index = max(1, (int) request()->query('q', 1));
@@ -164,11 +165,11 @@ class ExamController extends Controller
             ->where('order_index', $index)
             ->firstOrFail();
 
-        $this->cacheService->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
-        $this->cacheService->applyCachedAnswer($attemptQuestion);
+        $this->cacheService()->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
+        $this->cacheService()->applyCachedAnswer($attemptQuestion);
 
-        $answeredCount = $this->cacheService->getAnsweredCount($attempt);
-        $statuses = $this->cacheService->getStatuses($attempt);
+        $answeredCount = $this->cacheService()->getAnsweredCount($attempt);
+        $statuses = $this->cacheService()->getStatuses($attempt);
 
         return view('std.exam', [
             'title' => 'Exam',
@@ -191,7 +192,7 @@ class ExamController extends Controller
     {
         $request->validate([
             'index' => 'required|integer|min:1',
-            'action' => 'required|in:next,prev,flag',
+            'action' => 'required|in:next,prev,flag,save,save-multi',
         ]);
 
         $student = Auth::guard('students')->user();
@@ -211,14 +212,14 @@ class ExamController extends Controller
             ->where('order_index', $index)
             ->firstOrFail();
 
-        $sessionIds = $this->cacheService->getAttemptSessionIds($attempt->id);
+        $sessionIds = $this->cacheService()->getAttemptSessionIds($attempt->id);
         if (empty($sessionIds) && $attempt->exam_session_id) {
             $sessionIds = [$attempt->exam_session_id];
         }
 
-        $this->cacheService->ensureSessionQuestionsCached($exam->id, $sessionIds);
-        $this->cacheService->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
-        $this->cacheService->applyCachedAnswer($attemptQuestion);
+        $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
+        $this->cacheService()->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
+        $this->cacheService()->applyCachedAnswer($attemptQuestion);
 
         $isFlagAction = $request->input('action') === 'flag';
 
@@ -231,10 +232,17 @@ class ExamController extends Controller
         $questionType = $attemptQuestion->question->question_type;
         if ($questionType === 'matching') {
             $map = $request->input('matching', []); // e.g., ['L1' => 'R3', 'L2' => 'R1']
-            if (is_array($map) && !empty($map)) {
-                $answerJson = json_encode($map);
-                $answeredAt = now();
-                $markDirty = true;
+            if (is_array($map)) {
+                $filtered = array_filter($map, static fn($value) => $value !== null && $value !== '');
+                if (!empty($filtered)) {
+                    $answerJson = json_encode($filtered);
+                    $answeredAt = now();
+                    $markDirty = true;
+                } elseif ($answerJson !== null) {
+                    $answerJson = null;
+                    $answeredAt = null;
+                    $markDirty = true;
+                }
             }
         } elseif ($questionType === 'true_false' && $request->has('tf')) {
             // True/False grid answers: map of statement option_id => 'true'|'false'
@@ -251,6 +259,10 @@ class ExamController extends Controller
                 $answerJson = json_encode($answerPayload);
                 $answeredAt = now();
                 $markDirty = true;
+            } elseif ($questionType === 'multiple_response' && $answerJson !== null) {
+                $answerJson = null;
+                $answeredAt = null;
+                $markDirty = true;
             }
         }
 
@@ -259,9 +271,9 @@ class ExamController extends Controller
             $markDirty = true;
         }
 
-        $this->cacheService->storeAnswer($attemptQuestion, $answerJson, $flagged, $answeredAt, $markDirty);
+        $this->cacheService()->storeAnswer($attemptQuestion, $answerJson, $flagged, $answeredAt, $markDirty);
         if ($markDirty) {
-            $this->cacheService->scheduleFlush($attempt);
+            $this->cacheService()->scheduleFlush($attempt);
         }
 
         if ($isFlagAction) {
@@ -297,16 +309,16 @@ class ExamController extends Controller
             ->latest('id')
             ->firstOrFail();
 
-        $statuses = $this->cacheService->getStatuses($attempt);
+        $statuses = $this->cacheService()->getStatuses($attempt);
         $firstUnanswered = collect($statuses)->firstWhere('answered', false);
         if ($firstUnanswered && !$request->boolean('force')) {
             toast('Masih ada soal belum terjawab', 'error');
             return redirect()->route('std.exam', [$token, 'q' => $firstUnanswered['order_index']]);
         }
 
-        // Ensure Redis answers are persisted before grading
-        $this->cacheService->flushAnswers($attempt);
-        $this->cacheService->clearScheduledFlush($attempt->id);
+        // Ensure cached answers are persisted before grading
+        $this->cacheService()->flushAnswers($attempt);
+        $this->cacheService()->clearScheduledFlush($attempt->id);
 
         // Compute grade
         $attemptQuestions = $attempt->questions()->with('question.questionOptions')->orderBy('order_index')->get();
@@ -327,9 +339,58 @@ class ExamController extends Controller
             // Decode answer
             $ans = $aq->answer ? json_decode($aq->answer, true) : null;
 
+            $optionIdMap = $q->questionOptions
+                ->mapWithKeys(fn($opt) => [(string) $opt->id => (string) $opt->id]);
+            $labelToId = $q->questionOptions
+                ->mapWithKeys(fn($opt) => [strtolower((string) $opt->option_label) => (string) $opt->id]);
+            $keyToId = $q->questionOptions
+                ->mapWithKeys(fn($opt) => [strtolower((string) ($opt->option_key ?? '')) => (string) $opt->id]);
+
+            $normalizeSelections = function ($selected) use ($optionIdMap, $labelToId, $keyToId) {
+                return collect(is_array($selected) ? $selected : [$selected])
+                    ->flatMap(fn($value) => is_array($value) ? $value : [$value])
+                    ->filter(function ($value) {
+                        if ($value === null) {
+                            return false;
+                        }
+
+                        if (is_string($value)) {
+                            return trim($value) !== '';
+                        }
+
+                        return $value !== '' && $value !== [];
+                    })
+                    ->map(function ($value) use ($optionIdMap, $labelToId, $keyToId) {
+                        $valueStr = (string) $value;
+
+                        if (isset($optionIdMap[$valueStr])) {
+                            return $optionIdMap[$valueStr];
+                        }
+
+                        $lower = strtolower($valueStr);
+                        if (isset($labelToId[$lower])) {
+                            return $labelToId[$lower];
+                        }
+
+                        if ($lower !== '' && isset($keyToId[$lower])) {
+                            return $keyToId[$lower];
+                        }
+
+                        return $valueStr;
+                    })
+                    ->unique()
+                    ->values()
+                    ->all();
+            };
+
             if ($type === 'multiple_choice') {
-                $correctSet = $q->questionOptions->where('is_correct', true)->pluck('id')->map('strval')->values()->toArray();
-                $selSet = collect((array)$ans)->map('strval')->values()->toArray();
+                $correctSet = $q->questionOptions
+                    ->filter(fn($opt) => (bool) $opt->is_correct)
+                    ->pluck('id')
+                    ->map('strval')
+                    ->values()
+                    ->toArray();
+                $selSet = array_values($normalizeSelections($ans));
                 sort($correctSet);
                 sort($selSet);
                 $isCorrect = ($correctSet === $selSet);
@@ -352,8 +413,13 @@ class ExamController extends Controller
                     if ($points == 1.0) { $correctQuestions++; }
                 } else {
                     // Legacy TF with two options
-                    $correctSet = $q->questionOptions->where('is_correct', true)->pluck('id')->map('strval')->values()->toArray();
-                    $selSet = collect((array)$ans)->map('strval')->values()->toArray();
+                    $correctSet = $q->questionOptions
+                        ->filter(fn($opt) => (bool) $opt->is_correct)
+                        ->pluck('id')
+                        ->map('strval')
+                        ->values()
+                        ->toArray();
+                    $selSet = array_values($normalizeSelections($ans));
                     sort($correctSet);
                     sort($selSet);
                     $isCorrect = ($correctSet === $selSet);
@@ -361,8 +427,13 @@ class ExamController extends Controller
                     if ($isCorrect) { $correctQuestions++; }
                 }
             } elseif ($type === 'multiple_response') {
-                $correctSet = $q->questionOptions->where('is_correct', true)->pluck('id')->map('strval')->values()->toArray();
-                $selSet = collect((array)$ans)->map('strval')->values()->toArray();
+                $correctSet = $q->questionOptions
+                    ->filter(fn($opt) => (bool) $opt->is_correct)
+                    ->pluck('id')
+                    ->map('strval')
+                    ->values()
+                    ->toArray();
+                $selSet = array_values($normalizeSelections($ans));
                 sort($correctSet);
                 sort($selSet);
                 $isCorrect = ($correctSet === $selSet);
@@ -377,7 +448,8 @@ class ExamController extends Controller
                 foreach ($leftItems as $left) {
                     $expected = $left->option_key; // e.g., R2
                     $given = $ansMap[$left->option_label] ?? null;
-                    if ($expected && $given && (string)$expected === (string)$given) {
+                    $givenStr = is_string($given) ? trim($given) : (string) $given;
+                    if ($expected && $givenStr !== '' && (string) $expected === (string) $givenStr) {
                         $correctMatches++;
                     }
                 }
@@ -488,16 +560,16 @@ class ExamController extends Controller
             ->where('order_index', $index)
             ->firstOrFail();
 
-        $sessionIds = $this->cacheService->getAttemptSessionIds($attempt->id);
+        $sessionIds = $this->cacheService()->getAttemptSessionIds($attempt->id);
         if (empty($sessionIds) && $attempt->exam_session_id) {
             $sessionIds = [$attempt->exam_session_id];
         }
 
-        $this->cacheService->ensureSessionQuestionsCached($exam->id, $sessionIds);
-        $this->cacheService->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
-        $this->cacheService->applyCachedAnswer($attemptQuestion);
+        $this->cacheService()->ensureSessionQuestionsCached($exam->id, $sessionIds);
+        $this->cacheService()->hydrateQuestion($attempt, $attemptQuestion, $sessionIds);
+        $this->cacheService()->applyCachedAnswer($attemptQuestion);
 
-        $answeredCount = $this->cacheService->getAnsweredCount($attempt);
+        $answeredCount = $this->cacheService()->getAnsweredCount($attempt);
 
         $html = view('std.question', [
             'attempt' => $attempt,
@@ -528,6 +600,6 @@ class ExamController extends Controller
             ->latest('id')
             ->firstOrFail();
 
-        return response()->json($this->cacheService->getStatuses($attempt));
+        return response()->json($this->cacheService()->getStatuses($attempt));
     }
 }

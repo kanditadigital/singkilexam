@@ -3,7 +3,7 @@
     margin: 0;
 }
 body{
-    background-color: aliceblue;
+    background-color: rgb(206, 232, 255);
 }
 .btn-exam-danger{
     border-radius: 50px;
@@ -69,5 +69,230 @@ body{
 }
 
 .exam-content .card{
-    border: 0 !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 10px !important;
+}
+
+.question-form{
+    width: 100%;
+}
+
+.question-meta .card-body{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+}
+
+.question-meta .meta-item{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.meta-label{
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7c8ba1;
+}
+
+.meta-value{
+    font-weight: 600;
+    font-size: 1rem;
+    color: #223046;
+}
+
+.question-card .question-layout{
+    row-gap: 1.5rem;
+}
+
+.question-text{
+    font-size: 1rem;
+    color: #1d2738;
+    line-height: 1.6;
+}
+
+.question-text p{
+    margin-bottom: 1rem;
+}
+
+.question-media{
+    background: #f2f7fc;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.question-image{
+    border-radius: 10px;
+    max-height: 340px;
+    object-fit: contain;
+}
+
+.answer-area{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.option-grid{
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.option-card{
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    background: #ffffff;
+    border: 1px solid #e0e6ef;
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.option-card:hover{
+    border-color: #3093d0;
+    box-shadow: 0 10px 24px -12px rgba(48, 147, 208, 0.45);
+}
+
+.option-card .option-input{
+    margin-top: 6px;
+}
+
+.option-marker{
+    font-weight: 600;
+    color: #3093d0;
+    background: rgba(48, 147, 208, 0.1);
+    border-radius: 999px;
+    padding: 4px 14px;
+    min-width: 46px;
+    text-align: center;
+}
+
+.option-content{
+    flex: 1;
+    color: #1d2738;
+}
+
+.option-image{
+    max-width: 100%;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.option-card.is-selected{
+    border-color: #3093d0;
+    background: #f3f8ff;
+    box-shadow: 0 12px 32px -18px rgba(48, 147, 208, 0.65);
+}
+
+.option-card.is-selected .option-marker{
+    background: #3093d0;
+    color: #ffffff;
+}
+
+.option-card.is-selected .option-content{
+    color: #173250;
+}
+
+.matching-grid{
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: #ffffff;
+    border: 1px solid #e0e6ef;
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.matching-header{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    font-weight: 600;
+    color: #223046;
+    border-bottom: 1px dashed #dbe3ef;
+    padding-bottom: 0.5rem;
+}
+
+.matching-row{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: center;
+}
+
+.matching-label{
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.matching-row + .matching-row{
+    border-top: 1px dashed #edf2fa;
+    padding-top: 0.75rem;
+}
+
+.matching-row select{
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+}
+
+.tf-grid table{
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.tf-option{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.tf-option input{
+    accent-color: #3093d0;
+}
+
+.question-actions .card-body{
+    gap: 1rem;
+}
+
+.question-actions .btn-action{
+    min-width: 190px;
+    border-radius: 999px;
+    font-weight: 600;
+    padding: 0.65rem 1.4rem;
+    box-shadow: 0 8px 24px -16px rgba(0,0,0,0.35);
+}
+
+.question-actions .btn-action:disabled{
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+@media (max-width: 991.98px) {
+    .question-card .question-layout{
+        row-gap: 2rem;
+    }
+
+    .question-actions .btn-action{
+        flex: 1 1 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .question-meta .card-body{
+        gap: 1rem;
+    }
+
+    .meta-item{
+        flex: 1 1 100%;
+        align-items: flex-start;
+    }
 }

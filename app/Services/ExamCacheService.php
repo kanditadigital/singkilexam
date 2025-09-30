@@ -8,18 +8,16 @@ use App\Models\ExamAttemptQuestion;
 use App\Models\ExamSession;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
-use Illuminate\Contracts\Redis\Connection as RedisConnection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 class ExamCacheService
 {
     private CacheRepository $cache;
-    private string $redisConnection;
     private int $answerTtl;
     private int $questionTtl;
     /** @var array<string,array<int,array>> */
@@ -35,18 +33,15 @@ class ExamCacheService
 
     public function __construct()
     {
-        $storeName = config('cache.default', 'redis');
+        $storeName = config('cache.default', 'file');
         $this->cache = Cache::store($storeName);
-
-        $this->redisConnection = config("cache.stores.{$storeName}.connection")
-            ?? config('cache.stores.redis.connection', 'default');
 
         $this->answerTtl = (int) config('exam.cache.answer_ttl', 7200); // 2 jam
         $this->questionTtl = (int) config('exam.cache.questions_ttl', 1800); // 30 menit
 
-        $prefix = config('database.redis.options.prefix');
+        $prefix = config('cache.prefix');
         if ($prefix === null) {
-            $prefix = Str::slug((string) config('app.name', 'laravel')).'_database_';
+            $prefix = Str::slug((string) config('app.name', 'laravel')).'_cache_';
         }
         $this->prefix = (string) $prefix;
     }
@@ -163,17 +158,14 @@ class ExamCacheService
         sort($sessionIds);
 
         $key = $this->attemptSessionsKey($attemptId);
-        $payload = json_encode($sessionIds);
         $ttl = max($this->answerTtl, $this->questionTtl);
-
-        $this->redis()->setex($key, $ttl, $payload);
+        $this->cache->put($key, $sessionIds, $ttl);
     }
 
     public function getAttemptSessionIds(int $attemptId): array
     {
-        $raw = $this->redis()->get($this->attemptSessionsKey($attemptId));
-        $decoded = $this->decodePayload($raw);
-        return is_array($decoded) ? array_map('intval', $decoded) : [];
+        $payload = $this->cache->get($this->attemptSessionsKey($attemptId));
+        return is_array($payload) ? array_map('intval', $payload) : [];
     }
 
     public function ensureSessionQuestionsCached(int $examId, array $sessionIds): void
@@ -262,17 +254,14 @@ class ExamCacheService
     public function scheduleFlush(ExamAttempt $attempt): void
     {
         $key = $this->flushScheduleKey($attempt->id);
-        $redis = $this->redis();
-
-        if ($redis->setnx($key, now()->toIso8601String())) {
-            $redis->expire($key, 30);
+        if ($this->cache->add($key, now()->toIso8601String(), 30)) {
             FlushAttemptAnswers::dispatch($attempt->id)->delay(now()->addSeconds(15));
         }
     }
 
     public function clearScheduledFlush(int $attemptId): void
     {
-        $this->redis()->del($this->flushScheduleKey($attemptId));
+        $this->cache->forget($this->flushScheduleKey($attemptId));
     }
 
     public function storeAnswerSnapshot(ExamAttemptQuestion $attemptQuestion, bool $markDirty = false): void
@@ -290,8 +279,9 @@ class ExamCacheService
 
     public function getCachedAnswerData(int $attemptId, int $attemptQuestionId): ?array
     {
-        $payload = $this->redis()->hget($this->answersKey($attemptId), (string) $attemptQuestionId);
-        return $this->decodePayload($payload);
+        $map = $this->getAnswersMap($attemptId);
+        $payload = $map[$attemptQuestionId] ?? null;
+        return is_array($payload) ? $payload : null;
     }
 
     private function getSessionQuestionMap(int $examId, array $sessionIds): array
@@ -302,13 +292,10 @@ class ExamCacheService
         }
 
         $key = $this->questionsKey($examId, $sessionIds);
-        $payload = $this->redis()->get($key);
+        $payload = $this->cache->get($key);
 
-        if ($payload !== null) {
-            $decoded = $this->decodePayload($payload);
-            if (is_array($decoded)) {
-                return $this->runtimeQuestionCache[$runtimeKey] = $decoded;
-            }
+        if (is_array($payload)) {
+            return $this->runtimeQuestionCache[$runtimeKey] = $payload;
         }
 
         return $this->runtimeQuestionCache[$runtimeKey] = $this->primeQuestionsCache($examId, $sessionIds);
@@ -356,7 +343,7 @@ class ExamCacheService
         }
 
         $key = $this->questionsKey($examId, $sessionIds);
-        $this->redis()->setex($key, $this->questionTtl, json_encode($map, JSON_UNESCAPED_UNICODE));
+        $this->cache->put($key, $map, $this->questionTtl);
 
         $runtimeKey = $this->runtimeCacheKey($examId, $sessionIds);
         $this->runtimeQuestionCache[$runtimeKey] = $map;
@@ -376,38 +363,46 @@ class ExamCacheService
 
     private function getAllCachedAnswerData(int $attemptId): array
     {
-        $raw = $this->redis()->hgetall($this->answersKey($attemptId));
-        $map = [];
-        foreach ($raw as $field => $payload) {
-            $decoded = $this->decodePayload($payload);
-            if ($decoded !== null) {
-                $map[(int) $field] = $decoded;
-            }
-        }
-
-        return $map;
+        return $this->getAnswersMap($attemptId);
     }
 
     private function writeAnswerPayload(int $attemptId, int $attemptQuestionId, array $payload): void
     {
-        $key = $this->answersKey($attemptId);
-        $this->redis()->hset($key, (string) $attemptQuestionId, json_encode($payload));
-        $this->redis()->expire($key, $this->answerTtl);
-    }
-
-    private function decodePayload(mixed $payload): ?array
-    {
-        if ($payload === null || $payload === false) {
-            return null;
-        }
+        $lock = $this->cache->lock($this->answersLockKey($attemptId), 5);
 
         try {
-            $decoded = json_decode((string) $payload, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            return null;
+            $lock->block(5, function () use ($attemptId, $attemptQuestionId, $payload): void {
+                $map = $this->getAnswersMap($attemptId);
+                $map[(int) $attemptQuestionId] = $payload;
+                $this->persistAnswersMap($attemptId, $map);
+            });
+        } catch (LockTimeoutException $e) {
+            $map = $this->getAnswersMap($attemptId);
+            $map[(int) $attemptQuestionId] = $payload;
+            $this->persistAnswersMap($attemptId, $map);
+        }
+    }
+
+    private function getAnswersMap(int $attemptId): array
+    {
+        $payload = $this->cache->get($this->answersKey($attemptId));
+        if (!is_array($payload)) {
+            return [];
         }
 
-        return is_array($decoded) ? $decoded : null;
+        $normalized = [];
+        foreach ($payload as $questionId => $data) {
+            if (is_array($data)) {
+                $normalized[(int) $questionId] = $data;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function persistAnswersMap(int $attemptId, array $map): void
+    {
+        $this->cache->put($this->answersKey($attemptId), $map, $this->answerTtl);
     }
 
     private function isAnswered(?string $value): bool
@@ -457,7 +452,7 @@ class ExamCacheService
                 $map[$row->id] = &$ordered[$index];
             }
 
-            // Overlay latest data from Redis cache
+            // Overlay latest data from cache store
             $cacheMap = $this->getAllCachedAnswerData($attemptId);
             foreach ($cacheMap as $id => $payload) {
                 if (!isset($map[$id])) {
@@ -514,8 +509,8 @@ class ExamCacheService
         return "{$this->prefix}exam:attempt:{$attemptId}:flush-scheduled";
     }
 
-    private function redis(): RedisConnection
+    private function answersLockKey(int $attemptId): string
     {
-        return Redis::connection($this->redisConnection);
+        return "{$this->prefix}exam:attempt:{$attemptId}:answers-lock";
     }
 }

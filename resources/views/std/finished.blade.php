@@ -9,8 +9,15 @@
                         <h3 class="mb-3">Ujian Selesai</h3>
                         <p class="text-muted mb-2">Terima kasih telah menyelesaikan ujian: <strong>{{ $exam->exam_name }}</strong>.</p>
                         @if($grade)
+                            @php
+                                $correct = (int) ($grade->correct_questions ?? 0);
+                                $answered = (int) ($grade->answered_questions ?? 0);
+                                $wrong = max(0, $answered - $correct);
+                            @endphp
                             <p class="lead mb-1">Nilai Anda: <strong>{{ number_format($grade->score, 2) }}</strong></p>
-                            <p class="text-muted">Soal terjawab: {{ $grade->answered_questions }}/{{ $grade->total_questions }}</p>
+                            <p class="text-muted mb-2">Soal terjawab: {{ $answered }}/{{ $grade->total_questions }}</p>
+                            <p class="mb-0">Jawaban benar: <strong>{{ $correct }}</strong></p>
+                            <p class="mb-3">Jawaban salah: <strong>{{ $wrong }}</strong></p>
                         @endif
                         <form action="{{ route('signout') }}" method="POST">
                             @csrf
