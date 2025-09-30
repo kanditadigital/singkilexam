@@ -4,13 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Models\Exam;
+use App\Models\School;
 
 class ExamParticipantLog extends Model
 {
     protected $fillable = [
         'exam_id',
         'school_id',
-        'student_id',
+        'participant_type',
+        'participant_id',
         'performed_by',
         'action',
         'meta',
@@ -30,9 +34,9 @@ class ExamParticipantLog extends Model
         return $this->belongsTo(School::class);
     }
 
-    public function student(): BelongsTo
+    public function participant(): MorphTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->morphTo();
     }
 
     public function performer(): BelongsTo

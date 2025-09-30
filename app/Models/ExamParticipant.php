@@ -4,14 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Models\Exam;
+use App\Models\School;
 
 class ExamParticipant extends Model
 {
     protected $fillable = [
         'exam_id',
         'school_id',
-        'student_id',
+        'participant_type',
+        'participant_id',
         'created_by',
+    ];
+
+    protected $casts = [
+        'participant_id' => 'integer',
     ];
 
     public function exam(): BelongsTo
@@ -24,13 +32,18 @@ class ExamParticipant extends Model
         return $this->belongsTo(School::class);
     }
 
-    public function student(): BelongsTo
+    public function participant(): MorphTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->morphTo();
     }
 
     public function creator(): BelongsTo
     {
         return $this->belongsTo(School::class, 'created_by');
+    }
+
+    public function scopeForParticipant($query, string $type, int $id)
+    {
+        return $query->where('participant_type', $type)->where('participant_id', $id);
     }
 }

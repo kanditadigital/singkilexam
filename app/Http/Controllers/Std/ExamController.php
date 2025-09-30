@@ -16,6 +16,7 @@ use App\Models\ExamGrade;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\ExamCacheService;
+use Illuminate\Support\Collection;
 
 class ExamController extends Controller
 {
@@ -88,17 +89,10 @@ class ExamController extends Controller
         $activeSessions = collect();
         $availableSessions = collect();
 
-        if ($participant['guard'] === 'students') {
-            $examIds = ExamParticipant::where('student_id', $participant['id'])->pluck('exam_id');
+        $examIds = $this->participantExamIds($participant);
 
-            if ($examIds->isNotEmpty()) {
-                $sessionQuery->whereIn('exam_id', $examIds);
-                $activeSessions = (clone $sessionQuery)->where('session_status', 'Active')->get();
-                $availableSessions = $activeSessions->isNotEmpty()
-                    ? $activeSessions
-                    : $sessionQuery->get();
-            }
-        } else {
+        if ($examIds->isNotEmpty()) {
+            $sessionQuery->whereIn('exam_id', $examIds);
             $activeSessions = (clone $sessionQuery)->where('session_status', 'Active')->get();
             $availableSessions = $activeSessions->isNotEmpty()
                 ? $activeSessions
@@ -137,15 +131,9 @@ class ExamController extends Controller
             return back();
         }
 
-        if ($participant['guard'] === 'students') {
-            $isRegistered = ExamParticipant::where('exam_id', $exam->id)
-                ->where('student_id', $participant['id'])
-                ->exists();
-
-            if (!$isRegistered) {
-                toast('Anda belum terdaftar sebagai peserta ujian ini', 'error');
-                return back();
-            }
+        if (!$this->isParticipantRegistered($exam->id, $participant)) {
+            toast('Anda belum terdaftar sebagai peserta ujian ini', 'error');
+            return back();
         }
 
         $inputName = trim((string) $validated['confirm_participant_name']);
@@ -172,15 +160,9 @@ class ExamController extends Controller
         $participant = $this->resolveParticipant();
         $exam = Exam::where('exam_code', $token)->firstOrFail();
 
-        if ($participant['guard'] === 'students') {
-            $isRegistered = ExamParticipant::where('exam_id', $exam->id)
-                ->where('student_id', $participant['id'])
-                ->exists();
-
-            if (!$isRegistered) {
-                toast('Anda belum terdaftar pada ujian ini', 'error');
-                return redirect()->route('std.confirmation');
-            }
+        if (!$this->isParticipantRegistered($exam->id, $participant)) {
+            toast('Anda belum terdaftar pada ujian ini', 'error');
+            return redirect()->route('std.confirmation');
         }
 
         $requestedSessionId = (int) $request->query('session', 0);
@@ -785,5 +767,20 @@ class ExamController extends Controller
             ->firstOrFail();
 
         return response()->json($this->cacheService()->getStatuses($attempt));
+    }
+
+    private function participantExamIds(array $participant): Collection
+    {
+        return ExamParticipant::where('participant_type', $participant['class'])
+            ->where('participant_id', $participant['id'])
+            ->pluck('exam_id');
+    }
+
+    private function isParticipantRegistered(int $examId, array $participant): bool
+    {
+        return ExamParticipant::where('exam_id', $examId)
+            ->where('participant_type', $participant['class'])
+            ->where('participant_id', $participant['id'])
+            ->exists();
     }
 }

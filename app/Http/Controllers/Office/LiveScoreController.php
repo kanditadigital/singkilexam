@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Employee;
 use App\Models\ExamAttempt;
+use App\Models\ExamParticipant;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,6 +28,9 @@ class LiveScoreController extends Controller
         $schoolId = $request->integer('school_id');
         $statusFilter = $request->input('status');
 
+        $studentClass = addslashes(Student::class);
+        $employeeClass = addslashes(Employee::class);
+
         $totalQuestionsSub = DB::table('exam_attempt_questions')
             ->select('exam_attempt_id', DB::raw('COUNT(*) as total_questions'))
             ->groupBy('exam_attempt_id');
@@ -43,9 +48,14 @@ class LiveScoreController extends Controller
                 'exam_attempts.started_at',
                 'exam_attempts.submitted_at',
                 'exam_attempts.updated_at',
+                'exam_attempts.participant_type',
+                'exam_attempts.participant_id',
                 'students.student_name',
                 'students.student_nisn',
-                'students.branch_id',
+                'students.student_gender',
+                'employees.employee_name',
+                'employees.username as employee_username',
+                'employees.employee_type',
                 'branches.branch_name',
                 'schools.id as school_id',
                 'schools.school_name',
@@ -61,12 +71,23 @@ class LiveScoreController extends Controller
                 DB::raw('COALESCE(total_q.total_questions, 0) as total_questions'),
                 DB::raw('COALESCE(ans_q.answered_questions, 0) as answered_questions'),
             ])
-            ->join('students', function ($join) {
-                $join->on('students.id', '=', 'exam_attempts.participant_id')
-                    ->where('exam_attempts.participant_type', '=', Student::class);
+            ->leftJoin('exam_participants as ep', function ($join) {
+                $join->on('ep.exam_id', '=', 'exam_attempts.exam_id')
+                    ->on('ep.participant_type', '=', 'exam_attempts.participant_type')
+                    ->on('ep.participant_id', '=', 'exam_attempts.participant_id');
             })
-            ->join('schools', 'schools.id', '=', 'students.school_id')
-            ->join('branches', 'branches.id', '=', 'students.branch_id')
+            ->leftJoin('students', function ($join) use ($studentClass) {
+                $join->on('students.id', '=', 'exam_attempts.participant_id')
+                    ->where('exam_attempts.participant_type', '=', $studentClass);
+            })
+            ->leftJoin('employees', function ($join) use ($employeeClass) {
+                $join->on('employees.id', '=', 'exam_attempts.participant_id')
+                    ->where('exam_attempts.participant_type', '=', $employeeClass);
+            })
+            ->leftJoin('schools', function ($join) {
+                $join->on('schools.id', '=', 'ep.school_id');
+            })
+            ->leftJoin('branches', 'branches.id', '=', 'schools.branch_id')
             ->join('exams', 'exams.id', '=', 'exam_attempts.exam_id')
             ->join('exam_sessions', 'exam_sessions.id', '=', 'exam_attempts.exam_session_id')
             ->leftJoin('exam_grades', 'exam_grades.exam_attempt_id', '=', 'exam_attempts.id')
@@ -77,10 +98,10 @@ class LiveScoreController extends Controller
                 $join->on('ans_q.exam_attempt_id', '=', 'exam_attempts.id');
             })
             ->when($branchId, function ($query) use ($branchId) {
-                $query->where('students.branch_id', $branchId);
+                $query->where('schools.branch_id', $branchId);
             })
             ->when($schoolId, function ($query) use ($schoolId) {
-                $query->where('students.school_id', $schoolId);
+                $query->where('schools.id', $schoolId);
             })
             ->when($statusFilter, function ($query) use ($statusFilter) {
                 if ($statusFilter === 'active') {
@@ -127,10 +148,24 @@ class LiveScoreController extends Controller
 
             $score = $row->grade_score !== null ? (float) $row->grade_score : null;
 
+            $isEmployee = $row->participant_type === Employee::class;
+            $participantName = $isEmployee ? ($row->employee_name ?? '-') : ($row->student_name ?? '-');
+            $participantIdentifier = $isEmployee
+                ? ($row->employee_username ?? '-')
+                : ($row->student_nisn ?? '-');
+            $participantMeta = $isEmployee
+                ? ($row->employee_type ?? '-')
+                : ($row->student_gender ?? '-');
+            $typeLabel = $isEmployee ? 'Guru/Staff' : 'Siswa';
+
             return [
                 'attempt_id' => $row->id,
-                'student_name' => $row->student_name,
-                'student_nisn' => $row->student_nisn,
+                'participant_type' => $row->participant_type,
+                'participant_id' => $row->participant_id,
+                'participant_type_label' => $typeLabel,
+                'participant_name' => $participantName,
+                'participant_identifier' => $participantIdentifier,
+                'participant_meta' => $participantMeta,
                 'branch_name' => $row->branch_name,
                 'school_name' => $row->school_name,
                 'exam_name' => $row->exam_name,

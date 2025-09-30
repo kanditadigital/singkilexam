@@ -9,6 +9,7 @@ use Yajra\DataTables\Facades\DataTables;
 use App\Models\Student;
 use App\Models\Branch;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class SiswaController extends Controller
 {
@@ -67,35 +68,13 @@ class SiswaController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'branch_id'         => 'required',
-            'school_id'         => 'required',
-            'student_name'      => 'required',
-            'student_nisn'      => 'required|unique:students',
-            'student_gender'    => 'required',
-            'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        $validated = $this->validateStudent($request);
 
-        // Handle photo upload
-        $photoPath = null;
-        if ($request->hasFile('student_photo')) {
-            $photoPath = $request->file('student_photo')->store('student_photos', 'public');
-        }
+        $photoPath = $this->storeStudentPhoto($request);
 
-        // Generate password once
         $rawPassword = $this->kanditaService->generatePassword();
 
-        Student::create([
-            'branch_id'         => $request->branch_id,
-            'school_id'         => $request->school_id,
-            'student_name'      => $request->student_name,
-            'student_nisn'      => $request->student_nisn,
-            'username'          => $request->student_nisn,
-            'password'          => Hash::make($rawPassword),
-            'pass_text'         => $rawPassword,
-            'student_gender'    => $request->student_gender,
-            'student_photo'     => $photoPath,
-        ]);
+        Student::create($this->studentPayload($validated, $photoPath, $rawPassword));
 
         toast('Siswa berhasil ditambahkan', 'success');
         return redirect()->route('siswa.index');
@@ -126,29 +105,13 @@ class SiswaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $request->validate([
-            'branch_id'         => 'required',
-            'school_id'         => 'required',
-            'student_name'      => 'required',
-            'student_nisn'      => 'required|unique:students,student_nisn,' . $id,
-            'student_gender'    => 'required',
-            'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        $student = Student::findOrFail($id);
 
-        $data = [
-            'branch_id'         => $request->branch_id,
-            'school_id'         => $request->school_id,
-            'student_name'      => $request->student_name,
-            'username'          => $request->student_nisn,
-            'student_nisn'      => $request->student_nisn,
-            'student_gender'    => $request->student_gender,
-        ];
+        $validated = $this->validateStudent($request, $student->id);
 
-        if ($request->hasFile('student_photo')) {
-            $data['student_photo'] = $request->file('student_photo')->store('student_photos', 'public');
-        }
+        $photoPath = $this->storeStudentPhoto($request, $student);
 
-        Student::where('id', $id)->update($data);
+        $student->update($this->studentPayload($validated, $photoPath));
 
         toast('Siswa berhasil diubah', 'success');
         return redirect()->route('siswa.index');
@@ -171,5 +134,58 @@ class SiswaController extends Controller
     {
         $schools = $this->kanditaService->getSchoolsByBranch($branchId);
         return response()->json($schools);
+    }
+
+    private function validateStudent(Request $request, ?int $id = null): array
+    {
+        return $request->validate([
+            'branch_id'         => 'required|exists:branches,id',
+            'school_id'         => 'required|exists:schools,id',
+            'student_name'      => 'required|string|max:255',
+            'student_nisn'      => 'required|string|max:30|unique:students,student_nisn' . ($id ? ',' . $id : ''),
+            'student_gender'    => 'required|in:Laki-laki,Perempuan',
+            'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+    }
+
+    private function storeStudentPhoto(Request $request, ?Student $student = null): ?string
+    {
+        if (!$request->hasFile('student_photo')) {
+            return $student?->student_photo;
+        }
+
+        $photo = $request->file('student_photo');
+        $path = $photo->store('student_photos', 'public');
+
+        if ($student && $student->student_photo && Storage::disk('public')->exists($student->student_photo)) {
+            Storage::disk('public')->delete($student->student_photo);
+        }
+
+        return $path;
+    }
+
+    private function studentPayload(array $data, ?string $photoPath = null, ?string $rawPassword = null): array
+    {
+        $payload = [
+            'branch_id'      => $data['branch_id'],
+            'school_id'      => $data['school_id'],
+            'student_name'   => $data['student_name'],
+            'student_nisn'   => $data['student_nisn'],
+            'username'       => $data['student_nisn'],
+            'student_gender' => $data['student_gender'],
+        ];
+
+        if ($photoPath !== null) {
+            $payload['student_photo'] = $photoPath;
+        } elseif ($rawPassword !== null) {
+            $payload['student_photo'] = 'user.png';
+        }
+
+        if ($rawPassword !== null) {
+            $payload['password'] = Hash::make($rawPassword);
+            $payload['pass_text'] = $rawPassword;
+        }
+
+        return $payload;
     }
 }

@@ -21,20 +21,22 @@ use Mews\Captcha\CaptchaController;
 
 // Site
 Route::get('/', [HomeController::class, 'index'])->name('home');
-
 Route::get('captcha/{config?}', [CaptchaController::class, 'getCaptcha']);
 Route::get('/refresh-captcha', function () {
     return response()->json(['captcha' => captcha_src('flat')]);
 });
 
-
-Route::post('/login-sch',[AuthController::class, 'schoolAuth'])->name('login.sch');
-
-
+/**
+ * Login Admin
+ */
 Route::get('/login',[AuthController::class, 'formSignIn'])->name('login');
 Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin.form');
 Route::post('/signin',[AuthController::class, 'signIn'])->name('signin');
 
+/**
+ * Login Sekolah
+ */
+Route::post('/login-sch',[AuthController::class, 'schoolAuth'])->name('login.sch');
 
 /**
  * Login Siswa dan Guru Menggunakan Exambrowser
@@ -44,7 +46,7 @@ Route::post('/bro-auth',[AuthController::class, 'signParticipate'])->name('bro.a
 Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
 
 Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard');
-Route::prefix('disdik')->middleware('auth')->group(function(){
+Route::prefix('disdik')->middleware('auth:web')->group(function(){
     Route::resource('cabdin', CabdinController::class);
     Route::resource('sekolah', SekolahController::class);
     Route::resource('pegawai', PegawaiController::class);

@@ -160,8 +160,9 @@
         return `
             <tr>
                 <td>
-                    <div class="font-weight-bold">${item.student_name || '-'}</div>
-                    <div class="text-muted small">NISN: ${item.student_nisn || '-'}</div>
+                    <div class="font-weight-bold">${item.participant_name || '-'}</div>
+                    <div class="text-muted small">${item.participant_type_label || '-'} | ${item.participant_identifier || '-'}</div>
+                    <div class="text-muted small">Info: ${item.participant_meta || '-'}</div>
                 </td>
                 <td>${item.school_name || '-'}</td>
                 <td>${item.branch_name || '-'}</td>

@@ -7,6 +7,7 @@ use App\Models\Exam;
 use App\Models\ExamParticipant;
 use App\Models\ExamParticipantLog;
 use App\Models\Student;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -33,34 +34,49 @@ class SchExamParticipantController extends Controller
     {
         $schoolId = Auth::guard('schools')->id();
         $examId = $request->integer('exam_id');
+        $type = $this->resolveType($request->input('type'));
+        $participantClass = $this->participantClass($type);
 
-        $query = Student::with('school')
-            ->where('school_id', $schoolId);
-
-        if ($gender = $request->input('gender')) {
-            $query->where('student_gender', $gender);
+        if ($type === 'employee') {
+            $query = Employee::where('school_id', $schoolId);
+            if ($employeeType = $request->input('employee_type')) {
+                $query->where('employee_type', $employeeType);
+            }
+        } else {
+            $query = Student::where('school_id', $schoolId);
+            if ($gender = $request->input('gender')) {
+                $query->where('student_gender', $gender);
+            }
         }
 
         $existing = collect();
         if ($examId) {
             $existing = ExamParticipant::where('exam_id', $examId)
                 ->where('school_id', $schoolId)
-                ->pluck('student_id');
+                ->where('participant_type', $participantClass)
+                ->pluck('participant_id');
         }
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('is_registered', function (Student $student) use ($existing) {
-                return $existing->contains($student->id);
+            ->addColumn('is_registered', fn ($model) => $existing->contains($model->id))
+            ->addColumn('name', function ($model) use ($type) {
+                return $type === 'employee' ? $model->employee_name : $model->student_name;
             })
-            ->addColumn('checkbox', function (Student $student) use ($existing) {
-                if ($existing->contains($student->id)) {
+            ->addColumn('identifier', function ($model) use ($type) {
+                return $type === 'employee' ? ($model->username ?? $model->email) : $model->student_nisn;
+            })
+            ->addColumn('meta', function ($model) use ($type) {
+                return $type === 'employee' ? ($model->employee_type ?? '-') : ($model->student_gender ?? '-');
+            })
+            ->addColumn('checkbox', function ($model) use ($existing) {
+                if ($existing->contains($model->id)) {
                     return '<span class="badge badge-success">Terdaftar</span>';
                 }
 
                 return '<div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input student-select" id="student-checkbox-' . $student->id . '" value="' . $student->id . '">
-                    <label class="custom-control-label" for="student-checkbox-' . $student->id . '"></label>
+                    <input type="checkbox" class="custom-control-input participant-select" id="participant-checkbox-' . $model->id . '" value="' . $model->id . '">
+                    <label class="custom-control-label" for="participant-checkbox-' . $model->id . '"></label>
                 </div>';
             })
             ->rawColumns(['checkbox'])
@@ -71,15 +87,21 @@ class SchExamParticipantController extends Controller
     {
         $schoolId = Auth::guard('schools')->id();
         $examId = $request->integer('exam_id');
+        $filterType = $request->has('type') ? $this->resolveType($request->input('type')) : null;
 
-        $query = ExamParticipant::with(['student'])
+        $query = ExamParticipant::with(['participant'])
             ->where('school_id', $schoolId)
-            ->when($examId, fn($q) => $q->where('exam_id', $examId));
+            ->when($examId, fn ($q) => $q->where('exam_id', $examId))
+            ->when($filterType, function ($q) use ($filterType) {
+                $q->where('participant_type', $this->participantClass($filterType));
+            });
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('student_name', fn(ExamParticipant $participant) => $participant->student->student_name ?? '-')
-            ->addColumn('student_gender', fn(ExamParticipant $participant) => $participant->student->student_gender ?? '-')
+            ->addColumn('type_label', fn (ExamParticipant $participant) => $this->typeLabelFromClass($participant->participant_type))
+            ->addColumn('name', fn (ExamParticipant $participant) => $this->participantName($participant))
+            ->addColumn('identifier', fn (ExamParticipant $participant) => $this->participantIdentifier($participant))
+            ->addColumn('meta', fn (ExamParticipant $participant) => $this->participantMeta($participant))
             ->addColumn('action', function (ExamParticipant $participant) {
                 return '<button type="button" class="btn btn-outline-danger btn-sm remove-participant" data-id="' . $participant->id . '"><i class="fas fa-trash"></i> Hapus</button>';
             })
@@ -92,51 +114,55 @@ class SchExamParticipantController extends Controller
         $school = Auth::guard('schools')->user();
         $data = $request->validate([
             'exam_id' => 'required|exists:exams,id',
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'integer|exists:students,id',
+            'participant_type' => 'required|in:student,employee',
+            'participant_ids' => 'required|array',
+            'participant_ids.*' => 'integer',
         ]);
 
-        $studentIds = collect($data['student_ids'])->unique()->values();
-        if ($studentIds->isEmpty()) {
+        $participantClass = $this->participantClass($data['participant_type']);
+
+        $ids = collect($data['participant_ids'])->unique()->values();
+        if ($ids->isEmpty()) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Tidak ada siswa dipilih.',
+                'message' => 'Tidak ada peserta dipilih.',
             ]);
         }
 
-        DB::transaction(function () use ($data, $studentIds, $school) {
-            /** @var Collection<int, int> $validIds */
-            $validIds = Student::whereIn('id', $studentIds)
-                ->where('school_id', $school->id)
-                ->pluck('id');
+        DB::transaction(function () use ($data, $ids, $school, $participantClass) {
+            $validIds = $this->validParticipantIds($participantClass, $ids, $school->id);
 
             if ($validIds->isEmpty()) {
-                throw new HttpException(422, 'Tidak ada siswa yang valid untuk didaftarkan.');
+                throw new HttpException(422, 'Tidak ada peserta yang valid untuk didaftarkan.');
             }
 
             $existing = ExamParticipant::where('exam_id', $data['exam_id'])
-                ->whereIn('student_id', $validIds)
-                ->pluck('student_id');
+                ->where('school_id', $school->id)
+                ->where('participant_type', $participantClass)
+                ->whereIn('participant_id', $validIds)
+                ->pluck('participant_id');
 
             $newIds = $validIds->diff($existing);
 
             $now = now();
-            $newIds->each(function ($studentId) use ($data, $school, $now) {
+            $newIds->each(function ($participantId) use ($data, $school, $now, $participantClass) {
                 $participant = ExamParticipant::create([
                     'exam_id' => $data['exam_id'],
                     'school_id' => $school->id,
-                    'student_id' => $studentId,
+                    'participant_type' => $participantClass,
+                    'participant_id' => $participantId,
                     'created_by' => $school->id,
                 ]);
 
                 ExamParticipantLog::create([
                     'exam_id' => $participant->exam_id,
                     'school_id' => $participant->school_id,
-                    'student_id' => $participant->student_id,
+                    'participant_type' => $participant->participant_type,
+                    'participant_id' => $participant->participant_id,
                     'performed_by' => $school->id,
                     'action' => 'added',
                     'meta' => [
-                        'participant_id' => $participant->id,
+                        'participant_record_id' => $participant->id,
                         'timestamp' => $now->toISOString(),
                     ],
                 ]);
@@ -160,11 +186,12 @@ class SchExamParticipantController extends Controller
             ExamParticipantLog::create([
                 'exam_id' => $participant->exam_id,
                 'school_id' => $participant->school_id,
-                'student_id' => $participant->student_id,
+                'participant_type' => $participant->participant_type,
+                'participant_id' => $participant->participant_id,
                 'performed_by' => $schoolId,
                 'action' => 'removed',
                 'meta' => [
-                    'participant_id' => $participant->id,
+                    'participant_record_id' => $participant->id,
                     'timestamp' => now()->toISOString(),
                 ],
             ]);
@@ -176,5 +203,73 @@ class SchExamParticipantController extends Controller
             'status' => 'success',
             'message' => 'Peserta ujian berhasil dihapus.',
         ]);
+    }
+
+    private function resolveType(?string $type): string
+    {
+        $type = $type ? strtolower($type) : 'student';
+        return in_array($type, ['student', 'employee'], true) ? $type : 'student';
+    }
+
+    private function participantClass(string $type): string
+    {
+        return $type === 'employee' ? Employee::class : Student::class;
+    }
+
+    private function typeLabelFromClass(?string $class): string
+    {
+        if ($class === Employee::class) {
+            return 'Guru/Staff';
+        }
+        return 'Siswa';
+    }
+
+    private function participantName(ExamParticipant $participant): string
+    {
+        $user = $participant->participant;
+        if (!$user) {
+            return '-';
+        }
+
+        return $participant->participant_type === Employee::class
+            ? ($user->employee_name ?? '-')
+            : ($user->student_name ?? '-');
+    }
+
+    private function participantIdentifier(ExamParticipant $participant): string
+    {
+        $user = $participant->participant;
+        if (!$user) {
+            return '-';
+        }
+
+        return $participant->participant_type === Employee::class
+            ? ($user->username ?? $user->email ?? '-')
+            : ($user->student_nisn ?? '-');
+    }
+
+    private function participantMeta(ExamParticipant $participant): string
+    {
+        $user = $participant->participant;
+        if (!$user) {
+            return '-';
+        }
+
+        return $participant->participant_type === Employee::class
+            ? ($user->employee_type ?? '-')
+            : ($user->student_gender ?? '-');
+    }
+
+    private function validParticipantIds(string $class, Collection $ids, int $schoolId): Collection
+    {
+        if ($class === Employee::class) {
+            return Employee::whereIn('id', $ids)
+                ->where('school_id', $schoolId)
+                ->pluck('id');
+        }
+
+        return Student::whereIn('id', $ids)
+            ->where('school_id', $schoolId)
+            ->pluck('id');
     }
 }

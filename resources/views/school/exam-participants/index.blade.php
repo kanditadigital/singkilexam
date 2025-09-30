@@ -2,13 +2,17 @@
 
 @section('content')
     <div class="section-body">
+        <div class="alert alert-danger" id="exam-helper" {{ $selectedExamId ? 'style=display:none;' : '' }}>
+            Silakan pilih ujian terlebih dahulu untuk menambah atau melihat peserta.
+        </div>
+
         <div class="card shadow">
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-user-check"></i> Kelola Peserta Ujian</h4>
             </div>
             <div class="card-body">
                 <div class="form-row align-items-end">
-                    <div class="form-group col-md-5">
+                    <div class="form-group col-md-4">
                         <label for="exam_id">Pilih Ujian <span class="text-danger">*</span></label>
                         <select id="exam_id" class="form-control custom-select">
                             <option value="">-- Pilih Ujian --</option>
@@ -20,6 +24,13 @@
                         </select>
                     </div>
                     <div class="form-group col-md-3">
+                        <label for="participant_type">Jenis Peserta</label>
+                        <select id="participant_type" class="form-control custom-select">
+                            <option value="student">Siswa</option>
+                            <option value="employee">Guru & Staff</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3" id="gender-filter-group">
                         <label for="filter_gender">Filter Jenis Kelamin</label>
                         <select id="filter_gender" class="form-control custom-select">
                             <option value="">Semua</option>
@@ -27,24 +38,22 @@
                             <option value="Perempuan">Perempuan</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-4 text-right">
-                        <button id="btn-save-participants" class="btn btn-primary" disabled>
-                            <i class="fas fa-save"></i> Simpan Peserta Terpilih
+                    <div class="form-group col-md-2 text-right">
+                        <button id="btn-save-participants" class="btn btn-primary btn-block" disabled>
+                            <i class="fas fa-save"></i> Simpan
                         </button>
                     </div>
                 </div>
 
-                <div class="alert alert-info" id="exam-helper" {{ $selectedExamId ? 'style=display:none;' : '' }}>
-                    Silakan pilih ujian terlebih dahulu untuk menambah atau melihat peserta.
-                </div>
+                <hr>
 
                 <div class="row mt-4">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card border">
-                            <div class="card-header py-2">
-                                <h5 class="mb-0"><i class="fas fa-users"></i> Daftar Siswa</h5>
+                            <div class="card-header bg-primary text-white py-1">
+                                <h4><i class="fas fa-users"></i> Daftar Peserta Tersedia</h4>
                             </div>
-                            <div class="card-body p-0">
+                            <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-sm mb-0" id="students-table">
                                         <thead>
@@ -52,8 +61,8 @@
                                                 <th width="5%">No</th>
                                                 <th width="15%">Pilih</th>
                                                 <th>Nama</th>
-                                                <th>NISN</th>
-                                                <th>Jenis Kelamin</th>
+                                                <th>Identitas</th>
+                                                <th>Info</th>
                                             </tr>
                                         </thead>
                                     </table>
@@ -61,19 +70,20 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card border">
-                            <div class="card-header py-2">
-                                <h5 class="mb-0"><i class="fas fa-list"></i> Peserta Terdaftar</h5>
+                            <div class="card-header bg-primary text-dark py-1">
+                                <h4><i class="fas fa-list"></i> Peserta Terdaftar</h4>
                             </div>
-                            <div class="card-body p-0">
+                            <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-sm mb-0" id="participants-table">
                                         <thead>
                                             <tr>
                                                 <th width="5%">No</th>
                                                 <th>Nama</th>
-                                                <th>Jenis Kelamin</th>
+                                                <th>Jenis Peserta</th>
+                                                <th>Info</th>
                                                 <th width="20%">Aksi</th>
                                             </tr>
                                         </thead>
@@ -85,12 +95,21 @@
                 </div>
 
                 <div class="mt-3">
-                    <small class="text-muted">Catatan: Siswa yang sudah terdaftar ditandai dengan badge hijau dan tidak dapat dipilih ulang. Gunakan tabel "Peserta Terdaftar" untuk menghapus peserta.</small>
+                    <small class="text-muted">Catatan: Peserta yang sudah terdaftar ditandai dengan badge hijau dan tidak dapat dipilih ulang. Gunakan tabel "Peserta Terdaftar" untuk menghapus peserta.</small>
                 </div>
             </div>
         </div>
     </div>
 @endsection
+
+@push('styles')
+<style>
+    #students-table tbody tr td,
+    #participants-table tbody tr td {
+        vertical-align: middle;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -104,7 +123,9 @@
 
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
     const $examSelect = $('#exam_id');
+    const $participantType = $('#participant_type');
     const $genderFilter = $('#filter_gender');
+    const $genderGroup = $('#gender-filter-group');
     const $saveButton = $('#btn-save-participants');
     const $helper = $('#exam-helper');
 
@@ -115,16 +136,20 @@
         return $examSelect.val();
     }
 
-    function selectedStudentIds() {
+    function currentParticipantType() {
+        return $participantType.val() || 'student';
+    }
+
+    function selectedParticipantIds() {
         const ids = [];
-        $('#students-table').find('input.student-select:checked').each(function () {
+        $('#students-table').find('input.participant-select:checked').each(function () {
             ids.push($(this).val());
         });
         return ids;
     }
 
     function enableSaveButton() {
-        $saveButton.prop('disabled', selectedStudentIds().length === 0);
+        $saveButton.prop('disabled', selectedParticipantIds().length === 0);
     }
 
     function buildStudentsTable() {
@@ -141,15 +166,16 @@
                 url: routes.students,
                 data: function (params) {
                     params.exam_id = currentExamId();
+                    params.type = currentParticipantType();
                     params.gender = $genderFilter.val();
                 },
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false },
-                { data: 'student_name', name: 'student_name' },
-                { data: 'student_nisn', name: 'student_nisn' },
-                { data: 'student_gender', name: 'student_gender' },
+                { data: 'name', name: 'name' },
+                { data: 'identifier', name: 'identifier' },
+                { data: 'meta', name: 'meta' },
             ],
             columnDefs: [
                 { targets: [0, 1], className: 'text-center align-middle' },
@@ -173,12 +199,14 @@
                 url: routes.registered,
                 data: function (params) {
                     params.exam_id = currentExamId();
+                    params.type = currentParticipantType();
                 },
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'student_name', name: 'student_name' },
-                { data: 'student_gender', name: 'student_gender' },
+                { data: 'name', name: 'name' },
+                { data: 'type_label', name: 'type_label' },
+                { data: 'meta', name: 'meta' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' },
             ]
         });
@@ -209,12 +237,28 @@
         }
     }
 
+    function toggleFilters() {
+        if (currentParticipantType() === 'employee') {
+            $genderFilter.val('');
+            $genderGroup.addClass('d-none');
+        } else {
+            $genderGroup.removeClass('d-none');
+        }
+    }
+
     $(document).ready(function () {
+        toggleFilters();
+
         if (currentExamId()) {
             refreshTables();
         }
 
         $examSelect.on('change', function () {
+            refreshTables();
+        });
+
+        $participantType.on('change', function () {
+            toggleFilters();
             refreshTables();
         });
 
@@ -224,7 +268,7 @@
             }
         });
 
-        $('#students-table').on('change', 'input.student-select', function () {
+        $('#students-table').on('change', 'input.participant-select', function () {
             enableSaveButton();
         });
 
@@ -260,7 +304,8 @@
 
         $saveButton.on('click', function () {
             const examId = currentExamId();
-            const ids = selectedStudentIds();
+            const ids = selectedParticipantIds();
+            const type = currentParticipantType();
 
             if (!examId) {
                 Swal.fire('Informasi', 'Pilih ujian terlebih dahulu.', 'info');
@@ -268,7 +313,7 @@
             }
 
             if (ids.length === 0) {
-                Swal.fire('Informasi', 'Pilih minimal satu siswa untuk disimpan.', 'info');
+                Swal.fire('Informasi', 'Pilih minimal satu peserta untuk disimpan.', 'info');
                 return;
             }
 
@@ -278,7 +323,8 @@
                 headers: { 'X-CSRF-TOKEN': csrfToken },
                 data: {
                     exam_id: examId,
-                    student_ids: ids
+                    participant_type: type,
+                    participant_ids: ids
                 }
             }).done(function (response) {
                 Swal.fire('Berhasil', response.message || 'Peserta berhasil disimpan.', 'success');

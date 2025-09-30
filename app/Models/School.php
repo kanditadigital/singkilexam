@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Branch;
 use App\Models\Student;
 use App\Models\Employee;
+use App\Models\ExamParticipant;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

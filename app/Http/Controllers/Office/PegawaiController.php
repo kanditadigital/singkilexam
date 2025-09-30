@@ -9,7 +9,6 @@ use App\Models\Branch;
 use App\Services\EmployeeService;
 use Yajra\DataTables\Facades\DataTables;
 use App\Services\KanditaService;
-use Illuminate\Support\Facades\Hash;
 
 class PegawaiController extends Controller
 {
@@ -71,29 +70,9 @@ class PegawaiController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'branch_id'         => 'required',
-            'school_id'         => 'required',
-            'employee_name'     => 'required',
-            'email'             => 'required|email|unique:employees',
-            'employee_type'     => 'required',
-            'employee_phone'    => 'nullable|string',
-        ]);
-
-        // Generate one password and reuse for plain + hashed (model will hash)
+        $validated = $this->validateEmployee($request);
         $rawPassword = $this->kanditaService->generatePassword();
-
-        Employee::create([
-            'branch_id'         => $request->branch_id,
-            'school_id'         => $request->school_id,
-            'employee_name'     => $request->employee_name,
-            'email'             => $request->email,
-            'employee_phone'    => $request->employee_phone,
-            'username'          => $request->email, // set username from email
-            'password'          => $rawPassword,
-            'pass_text'         => $rawPassword,
-            'employee_type'     => $request->employee_type,
-        ]);
+        Employee::create($this->employeePayload($validated, $rawPassword));
 
         toast('Pegawai berhasil ditambahkan', 'success');
         return redirect()->route('pegawai.index');
@@ -124,26 +103,46 @@ class PegawaiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $request->validate([
-            'branch_id'         => 'required',
-            'school_id'         => 'required',
-            'employee_name'     => 'required',
-            'email'             => 'required|email|unique:employees,email,' . $id,
-            'employee_type'     => 'required',
-            'employee_phone'    => 'nullable|string',
-        ]);
+        $employee = Employee::findOrFail($id);
 
-        Employee::where('id', $id)->update([
-            'branch_id'         => $request->branch_id,
-            'school_id'         => $request->school_id,
-            'employee_name'     => $request->employee_name,
-            'email'             => $request->email,
-            'employee_phone'    => $request->employee_phone,
-            'employee_type'     => $request->employee_type,
-        ]);
+        $validated = $this->validateEmployee($request, $employee->id);
+
+        $employee->update($this->employeePayload($validated));
 
         toast('Pegawai berhasil diubah', 'success');
         return redirect()->route('pegawai.index');
+    }
+
+    private function validateEmployee(Request $request, ?int $id = null): array
+    {
+        return $request->validate([
+            'branch_id'         => 'required|exists:branches,id',
+            'school_id'         => 'required|exists:schools,id',
+            'employee_name'     => 'required|string|max:255',
+            'email'             => 'required|email|max:255|unique:employees,email' . ($id ? ',' . $id : ''),
+            'employee_type'     => 'required|string|max:100',
+            'employee_phone'    => 'nullable|string|max:50',
+        ]);
+    }
+
+    private function employeePayload(array $data, ?string $rawPassword = null): array
+    {
+        $payload = [
+            'branch_id'      => $data['branch_id'],
+            'school_id'      => $data['school_id'],
+            'employee_name'  => $data['employee_name'],
+            'email'          => $data['email'],
+            'employee_phone' => $data['employee_phone'] ?? null,
+            'employee_type'  => $data['employee_type'],
+            'username'       => $data['email'],
+        ];
+
+        if ($rawPassword !== null) {
+            $payload['password'] = $rawPassword;
+            $payload['pass_text'] = $rawPassword;
+        }
+
+        return $payload;
     }
 
     /**

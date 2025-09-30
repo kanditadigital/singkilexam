@@ -54,7 +54,7 @@
 
         $('#datayajra').on('click', '.edit', function() {
             const id = $(this).data('id');
-            window.location.href = `{{ url('sch/employee') }}/${id}/edit`;
+            window.location.href = `{{ url('sch/employee') }}/${id}edit`;
         });
 
         $('#datayajra').on('click', '.delete', function(event) {
