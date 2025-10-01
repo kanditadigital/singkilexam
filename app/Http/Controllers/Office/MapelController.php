@@ -23,7 +23,7 @@ class MapelController extends Controller
                 ->addIndexColumn()
                 ->addColumn("action", function ($row) {
                     $showButton = '<button type="button" class="btn btn-outline-info btn-sm show ml-2" data-id="' . $row->id . '">
-                                    <i class="fas fa-fw fa-eye"></i> Lihat
+                                    <i class="fas fa-fw fa-file"></i> Soal
                                     </button>';
                     $editButton = '<button type="button" class="btn btn-outline-primary btn-sm edit ml-2" data-id="' . $row->id . '">
                                     <i class="fas fa-fw fa-pencil-alt"></i> Edit

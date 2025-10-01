@@ -45,6 +45,9 @@ class SchEmployeeController extends Controller
         ]);
     }
 
+    /**
+     *
+     */
     public function create()
     {
         return view('school.pegawai.add', [
@@ -55,26 +58,26 @@ class SchEmployeeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'employee_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:employees,username',
-            'email' => 'nullable|email|unique:employees,email',
-            'employee_phone' => 'nullable|string|max:50',
-            'employee_type' => 'required|string|max:100',
+            'employee_name'     => 'required|string|max:255',
+            'username'          => 'required|string|max:255|unique:employees,username',
+            'email'             => 'nullable|email|unique:employees,email',
+            'employee_phone'    => 'nullable|string|max:50',
+            'employee_type'     => 'required|string|max:100',
         ]);
 
         $school = Auth::guard('schools')->user();
         $rawPassword = $this->kanditaService->generatePassword();
 
         Employee::create([
-            'branch_id' => $school->branch_id,
-            'school_id' => $school->id,
-            'employee_name' => $request->employee_name,
-            'email' => $request->email,
-            'username' => $request->username,
-            'employee_phone' => $request->employee_phone,
-            'employee_type' => $request->employee_type,
-            'password' => Hash::make($rawPassword),
-            'pass_text' => $rawPassword,
+            'branch_id'         => $school->branch_id,
+            'school_id'         => $school->id,
+            'employee_name'     => $request->employee_name,
+            'email'             => $request->email,
+            'username'          => $request->username,
+            'employee_phone'    => $request->employee_phone,
+            'employee_type'     => $request->employee_type,
+            'password'          => Hash::make($rawPassword),
+            'pass_text'         => $rawPassword,
         ]);
 
         toast('Data guru/staff berhasil ditambahkan', 'success');
@@ -96,20 +99,20 @@ class SchEmployeeController extends Controller
         $employee = Employee::where('school_id', Auth::guard('schools')->id())->findOrFail($id);
 
         $request->validate([
-            'employee_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:employees,username,' . $employee->id,
-            'email' => 'nullable|email|unique:employees,email,' . $employee->id,
-            'employee_phone' => 'nullable|string|max:50',
-            'employee_type' => 'required|string|max:100',
-            'reset_password' => 'nullable|boolean',
+            'employee_name'     => 'required|string|max:255',
+            'username'          => 'required|string|max:255|unique:employees,username,' . $employee->id,
+            'email'             => 'nullable|email|unique:employees,email,' . $employee->id,
+            'employee_phone'    => 'nullable|string|max:50',
+            'employee_type'     => 'required|string|max:100',
+            'reset_password'    => 'nullable|boolean',
         ]);
 
         $payload = [
-            'employee_name' => $request->employee_name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'employee_phone' => $request->employee_phone,
-            'employee_type' => $request->employee_type,
+            'employee_name'     => $request->employee_name,
+            'username'          => $request->username,
+            'email'             => $request->email,
+            'employee_phone'    => $request->employee_phone,
+            'employee_type'     => $request->employee_type,
         ];
 
         if ($request->boolean('reset_password')) {

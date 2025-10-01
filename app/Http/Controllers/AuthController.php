@@ -112,12 +112,18 @@ class AuthController extends Controller
      */
     public function signOut(Request $request)
     {
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        toast('Anda berhasil logout', 'success');
+        return redirect('/');
+    }
+
+    public function stdOut(Request $request)
+    {
         // Check which guard is currently authenticated and logout from that guard
         if (Auth::guard('students')->check()) {
             Auth::guard('students')->logout();
-        } elseif (Auth::guard('employees')->check()) {
-            Auth::guard('employees')->logout();
-        } else {
+        }else {
             Auth::logout(); // fallback for default guard
         }
 

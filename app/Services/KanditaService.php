@@ -1,11 +1,11 @@
-<?php 
+<?php
 namespace App\Services;
 
 use App\Models\School;
 
 class KanditaService
 {
-    /** 
+    /**
      * Get School By Branch for dropdown
      */
     public function getSchoolsByBranch($branchId)
@@ -27,11 +27,11 @@ class KanditaService
      */
     public function generateExamCode()
     {
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $randomExamCode = '';
         $maxIndex = strlen($characters) - 1;
 
-        for ($i = 0; $i < 8; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $randomExamCode .= $characters[random_int(0, $maxIndex)];
         }
 

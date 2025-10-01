@@ -32,6 +32,7 @@ Route::get('/refresh-captcha', function () {
 Route::get('/login',[AuthController::class, 'formSignIn'])->name('login');
 Route::get('/signin',[AuthController::class, 'formSignIn'])->name('signin.form');
 Route::post('/signin',[AuthController::class, 'signIn'])->name('signin');
+Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
 
 /**
  * Login Sekolah
@@ -43,9 +44,10 @@ Route::post('/login-sch',[AuthController::class, 'schoolAuth'])->name('login.sch
  */
 Route::get('/bro-login',[AuthController::class, 'formSignParticipate'])->name('bro.login');
 Route::post('/bro-auth',[AuthController::class, 'signParticipate'])->name('bro.auth');
-Route::post('/signout',[AuthController::class, 'signOut'])->name('signout');
+Route::post('/stdout',[AuthController::class, 'stdOut'])->name('std.out');
 
 Route::get('/dashboard',[DashboardController::class, 'index'])->name('dashboard');
+
 Route::prefix('disdik')->middleware('auth:web')->group(function(){
     Route::resource('cabdin', CabdinController::class);
     Route::resource('sekolah', SekolahController::class);

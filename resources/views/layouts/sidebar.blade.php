@@ -12,7 +12,7 @@
         <!-- Menu -->
         <ul class="sidebar-menu">
 
-            <li><a class="nav-link" href=""><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a class="nav-link" href="{{ route('dashboard') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
             @if(Auth::guard('web')->user())
                 <li><a class="nav-link" href="{{ route('cabdin.index') }}"><i class="fas fa-building"></i> <span>Data Cabdin</span></a></li>
                 <li><a class="nav-link" href="{{ route('sekolah.index') }}"><i class="fas fa-school"></i> <span>Data Sekolah</span></a></li>

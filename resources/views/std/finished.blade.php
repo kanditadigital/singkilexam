@@ -22,7 +22,7 @@
                             <p class="mb-0">Jawaban benar: <strong>{{ $correct }}</strong></p>
                             <p class="mb-3">Jawaban salah: <strong>{{ $wrong }}</strong></p>
                         @endif
-                        <form action="{{ route('signout') }}" method="POST">
+                        <form action="{{ route('std.out') }}" method="POST">
                             @csrf
                             <button type="submit" class="btn btn-exam-danger mt-3 px-4">Keluar <i class="fas fa-fw fa-sign-out-alt"></i></button>
                         </form>

@@ -7,7 +7,6 @@ use App\Models\School;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Hash;
 
 class Employee extends Authenticatable
 {
@@ -30,10 +29,6 @@ class Employee extends Authenticatable
         'remember_token',
     ];
 
-    protected $casts = [
-        'password' => 'hashed',
-    ];
-
     /**
      * Get the name of the unique identifier for the user.
      */
@@ -49,14 +44,6 @@ class Employee extends Authenticatable
     public function getAuthIdentifier()
     {
         return $this->{$this->getKeyName()};
-    }
-
-    /**
-     * Mutator to hash password when setting
-     */
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = Hash::make($value);
     }
 
     public function branch()

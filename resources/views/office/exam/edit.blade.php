@@ -42,22 +42,6 @@
                     </div>
                     <div class="form-group row">
                         <div class="col-md-6">
-                            <label for="exam_start_time">Waktu Mulai <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="exam_start_time" id="exam_start_time" class="form-control @error('exam_start_time') is-invalid @enderror" value="{{ old('exam_start_time') ?? date('Y-m-d\TH:i', strtotime($exam->exam_start_time)) }}" required>
-                            @error('exam_start_time')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="exam_end_time">Waktu Selesai <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="exam_end_time" id="exam_end_time" class="form-control @error('exam_end_time') is-invalid @enderror" value="{{ old('exam_end_time') ?? date('Y-m-d\TH:i', strtotime($exam->exam_end_time)) }}" required>
-                            @error('exam_end_time')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <div class="col-md-6">
                             <label for="exam_status">Status <span class="text-danger">*</span></label>
                             <select name="exam_status" id="exam_status" class="form-control custom-select @error('exam_status') is-invalid @enderror" required>
                                 <option value="">Pilih Status</option>
