@@ -11,10 +11,12 @@ use App\Http\Controllers\Office\SesiController;
 use App\Http\Controllers\Office\MapelController;
 use App\Http\Controllers\Office\LiveScoreController;
 use App\Http\Controllers\Office\SoalController;
+use App\Http\Controllers\Office\RankingController;
 use App\Http\Controllers\Sch\SchEmployeeController;
 use App\Http\Controllers\Sch\SchExamParticipantController;
 use App\Http\Controllers\Sch\SchStudentController;
 use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\LiveScoreController as SiteLiveScoreController;
 use App\Http\Controllers\Std\ExamController;
 use Illuminate\Support\Facades\Route;
 use Mews\Captcha\CaptchaController;
@@ -25,6 +27,9 @@ Route::get('captcha/{config?}', [CaptchaController::class, 'getCaptcha']);
 Route::get('/refresh-captcha', function () {
     return response()->json(['captcha' => captcha_src('flat')]);
 });
+
+Route::get('/live-score/stream', [SiteLiveScoreController::class, 'data'])->name('public.live-score');
+Route::get('/live-score/stream/schools/{branch}', [SiteLiveScoreController::class, 'schoolsByBranch'])->name('public.live-score.schools');
 
 /**
  * Login Admin
@@ -59,6 +64,10 @@ Route::prefix('disdik')->middleware('auth:web')->group(function(){
     Route::resource('soal', SoalController::class);
     Route::get('live-score', [LiveScoreController::class, 'index'])->name('live-score.index');
     Route::get('live-score/data', [LiveScoreController::class, 'data'])->name('live-score.data');
+    Route::post('live-score/toggle-public', [LiveScoreController::class, 'togglePublic'])->name('live-score.toggle');
+    Route::get('ranking', [RankingController::class, 'index'])->name('ranking.index');
+    Route::get('ranking/data', [RankingController::class, 'data'])->name('ranking.data');
+    Route::get('ranking/download', [RankingController::class, 'downloadPdf'])->name('ranking.download');
 
     // get school by branch
     Route::get('/schools/by-branch/{branchId}', [PegawaiController::class, 'getByBranch'])->name('pegawai.getByBranch');

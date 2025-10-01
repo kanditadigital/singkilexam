@@ -8,7 +8,16 @@
             </div>
             <div class="card-body">
                 <div class="row align-items-end">
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-lg-3 col-md-6">
+                        <label for="filter_exam">Ujian</label>
+                        <select id="filter_exam" class="form-control custom-select">
+                            <option value="">Semua Ujian</option>
+                            @foreach($exams as $exam)
+                                <option value="{{ $exam->id }}">{{ $exam->exam_name }} ({{ $exam->exam_code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-3 col-md-6">
                         <label for="filter_branch">Cabang Dinas</label>
                         <select id="filter_branch" class="form-control custom-select">
                             <option value="">Semua Cabdin</option>
@@ -17,13 +26,13 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-lg-3 col-md-6">
                         <label for="filter_school">Sekolah</label>
                         <select id="filter_school" class="form-control custom-select" disabled>
                             <option value="">Semua Sekolah</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-lg-3 col-md-6">
                         <label for="filter_status">Status Ujian</label>
                         <select id="filter_status" class="form-control custom-select">
                             <option value="">Semua Status</option>
@@ -33,9 +42,16 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
-                    <div class="text-muted" id="generated-info">Memuat data...</div>
-                    <div>
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mt-3 mb-2">
+                    <div class="mb-2 mb-lg-0">
+                        <div class="text-muted" id="generated-info">Memuat data...</div>
+                        <div class="small text-muted" id="public-toggle-status"></div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="custom-control custom-switch mr-3">
+                            <input type="checkbox" class="custom-control-input" id="public-live-toggle" {{ $publicLiveScoreEnabled ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="public-live-toggle">Tampilkan di halaman publik</label>
+                        </div>
                         <button id="btn-refresh" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync-alt"></i> Refresh</button>
                     </div>
                 </div>
@@ -92,12 +108,22 @@
     const routes = {
         schoolsByBranch: @json(route('pegawai.getByBranch', ['branchId' => '__BRANCH__'])),
         liveData: @json(route('live-score.data')),
+        togglePublic: @json(route('live-score.toggle')),
     };
+
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
 
     const $tableBody = $('#live-score-table tbody');
     const $branchSelect = $('#filter_branch');
     const $schoolSelect = $('#filter_school');
     const $statusSelect = $('#filter_status');
+    const $examSelect = $('#filter_exam');
+    const $publicToggle = $('#public-live-toggle');
+    const $publicToggleStatus = $('#public-toggle-status');
     const $generatedInfo = $('#generated-info');
     const $refreshButton = $('#btn-refresh');
 
@@ -194,6 +220,7 @@
 
     function fetchLiveScore() {
         const params = {
+            exam_id: $examSelect.val() || '',
             branch_id: $branchSelect.val() || '',
             school_id: $schoolSelect.val() || '',
             status: $statusSelect.val() || '',
@@ -255,17 +282,56 @@
     $(document).ready(function () {
         moment.locale('id');
 
+        function updatePublicStatus(enabled) {
+            if (enabled) {
+                $publicToggleStatus
+                    .text('Live score publik saat ini aktif.')
+                    .removeClass('text-danger')
+                    .addClass('text-muted');
+                $publicToggle.closest('.custom-control').find('.custom-control-label').removeClass('text-danger');
+            } else {
+                $publicToggleStatus
+                    .text('Live score publik saat ini nonaktif.')
+                    .removeClass('text-muted')
+                    .addClass('text-danger');
+                $publicToggle.closest('.custom-control').find('.custom-control-label').addClass('text-danger');
+            }
+        }
+
         $branchSelect.on('change', function () {
             loadSchools($(this).val());
             fetchLiveScore();
         });
 
+        $examSelect.on('change', fetchLiveScore);
         $schoolSelect.on('change', fetchLiveScore);
         $statusSelect.on('change', fetchLiveScore);
         $refreshButton.on('click', fetchLiveScore);
 
+        $publicToggle.on('change', function () {
+            const enabled = $(this).is(':checked');
+            $publicToggle.prop('disabled', true);
+            $.post(routes.togglePublic, { enabled: enabled ? 1 : 0 })
+                .done(function (response) {
+                    updatePublicStatus(response.enabled);
+                })
+                .fail(function () {
+                    $publicToggle.prop('checked', !enabled);
+                    updatePublicStatus(!enabled);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Tidak dapat memperbarui status live score publik.',
+                    });
+                })
+                .always(function () {
+                    $publicToggle.prop('disabled', false);
+                });
+        });
+
         fetchLiveScore();
         startPolling();
+        updatePublicStatus($publicToggle.is(':checked')); 
 
         $(window).on('beforeunload', stopPolling);
     });

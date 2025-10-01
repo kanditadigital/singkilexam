@@ -22,6 +22,7 @@
                 <li><a class="nav-link" href="{{ route('mapel.index') }}"><i class="fas fa-book"></i> <span>Data Mata Pelajaran</span></a></li>
                 <li><a class="nav-link" href="{{ route('sesi-ujian.index') }}"><i class="fas fa-calendar-alt"></i> <span>Data Sesi Ujian</span></a></li>
                 <li><a class="nav-link" href="{{ route('live-score.index') }}"><i class="fas fa-broadcast-tower"></i> <span>Live Score</span></a></li>
+                <li><a class="nav-link" href="{{ route('ranking.index') }}"><i class="fas fa-trophy"></i> <span>Perengkingan</span></a></li>
 
             @elseif(Auth::guard('schools')->user())
                 <li><a class="nav-link" href="{{ route('employee.index') }}"><i class="fas fa-users"></i> <span>Data Guru & Staff</span></a></li>

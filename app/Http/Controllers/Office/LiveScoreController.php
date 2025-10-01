@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Office;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Employee;
-use App\Models\ExamAttempt;
-use App\Models\ExamParticipant;
+use App\Models\Exam;
+use App\Models\SiteSetting;
 use App\Models\Student;
+use App\Services\LiveScoreData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,29 +20,14 @@ class LiveScoreController extends Controller
         return view('office.live-score.index', [
             'title' => 'Live Score Ujian',
             'branches' => Branch::orderBy('branch_name')->get(),
+            'exams' => Exam::orderBy('exam_name')->get(),
+            'publicLiveScoreEnabled' => SiteSetting::getBool('live_score_public_enabled'),
         ]);
     }
 
     public function data(Request $request)
     {
-        $branchId = $request->integer('branch_id');
-        $schoolId = $request->integer('school_id');
-        $statusFilter = $request->input('status');
-
-        $studentClass = addslashes(Student::class);
-        $employeeClass = addslashes(Employee::class);
-
-        $totalQuestionsSub = DB::table('exam_attempt_questions')
-            ->select('exam_attempt_id', DB::raw('COUNT(*) as total_questions'))
-            ->groupBy('exam_attempt_id');
-
-        $answeredQuestionsSub = DB::table('exam_attempt_questions')
-            ->select('exam_attempt_id', DB::raw('COUNT(*) as answered_questions'))
-            ->whereNotNull('answer')
-            ->whereRaw("TRIM(answer) <> ''")
-            ->groupBy('exam_attempt_id');
-
-        $attempts = ExamAttempt::query()
+        $attempts = LiveScoreData::baseQuery($request->only(['branch_id', 'school_id', 'status', 'exam_id']))
             ->select([
                 'exam_attempts.id',
                 'exam_attempts.status',
@@ -71,45 +57,6 @@ class LiveScoreController extends Controller
                 DB::raw('COALESCE(total_q.total_questions, 0) as total_questions'),
                 DB::raw('COALESCE(ans_q.answered_questions, 0) as answered_questions'),
             ])
-            ->leftJoin('exam_participants as ep', function ($join) {
-                $join->on('ep.exam_id', '=', 'exam_attempts.exam_id')
-                    ->on('ep.participant_type', '=', 'exam_attempts.participant_type')
-                    ->on('ep.participant_id', '=', 'exam_attempts.participant_id');
-            })
-            ->leftJoin('students', function ($join) use ($studentClass) {
-                $join->on('students.id', '=', 'exam_attempts.participant_id')
-                    ->where('exam_attempts.participant_type', '=', $studentClass);
-            })
-            ->leftJoin('employees', function ($join) use ($employeeClass) {
-                $join->on('employees.id', '=', 'exam_attempts.participant_id')
-                    ->where('exam_attempts.participant_type', '=', $employeeClass);
-            })
-            ->leftJoin('schools', function ($join) {
-                $join->on('schools.id', '=', 'ep.school_id');
-            })
-            ->leftJoin('branches', 'branches.id', '=', 'schools.branch_id')
-            ->join('exams', 'exams.id', '=', 'exam_attempts.exam_id')
-            ->join('exam_sessions', 'exam_sessions.id', '=', 'exam_attempts.exam_session_id')
-            ->leftJoin('exam_grades', 'exam_grades.exam_attempt_id', '=', 'exam_attempts.id')
-            ->leftJoinSub($totalQuestionsSub, 'total_q', function ($join) {
-                $join->on('total_q.exam_attempt_id', '=', 'exam_attempts.id');
-            })
-            ->leftJoinSub($answeredQuestionsSub, 'ans_q', function ($join) {
-                $join->on('ans_q.exam_attempt_id', '=', 'exam_attempts.id');
-            })
-            ->when($branchId, function ($query) use ($branchId) {
-                $query->where('schools.branch_id', $branchId);
-            })
-            ->when($schoolId, function ($query) use ($schoolId) {
-                $query->where('schools.id', $schoolId);
-            })
-            ->when($statusFilter, function ($query) use ($statusFilter) {
-                if ($statusFilter === 'active') {
-                    $query->where('exam_attempts.status', 'in_progress');
-                } elseif ($statusFilter === 'submitted') {
-                    $query->where('exam_attempts.status', 'submitted');
-                }
-            })
             ->orderByDesc('exam_attempts.updated_at')
             ->limit(200)
             ->get();
@@ -186,6 +133,23 @@ class LiveScoreController extends Controller
         return response()->json([
             'data' => $data,
             'generated_at' => $now->toIso8601String(),
+        ]);
+    }
+
+    public function togglePublic(Request $request)
+    {
+        $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $enabled = $request->boolean('enabled');
+        SiteSetting::set('live_score_public_enabled', $enabled);
+
+        return response()->json([
+            'enabled' => $enabled,
+            'message' => $enabled
+                ? 'Live score publik berhasil diaktifkan.'
+                : 'Live score publik dinonaktifkan.',
         ]);
     }
 }
