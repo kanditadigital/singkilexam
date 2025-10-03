@@ -9,6 +9,7 @@ use App\Http\Controllers\Std\ExamController;
 // --- SITE ---
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\ExamBrowserController;
 
 // --- DISDIK ---
 use App\Http\Controllers\Office\SesiController;
@@ -54,6 +55,9 @@ Route::get('live-score', [SiteLiveScoreController::class, 'index'])->name('live-
 Route::get('live-score/stream', [SiteLiveScoreController::class, 'data'])->name('public.live-score');
 Route::get('live-score/stream/schools/{branch}', [SiteLiveScoreController::class, 'schoolsByBranch'])
     ->name('public.live-score.schools');
+
+// Exam Browser
+Route::get('exambrowser', [ExamBrowserController::class, 'index'])->name('exambrowser');
 
 
 /*
@@ -144,6 +148,10 @@ Route::prefix('cabdin')->name('cabdin.')->middleware('auth:branches')->group(fun
 Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function () {
     Route::resource('student', SchStudentController::class);
     Route::resource('employee', SchEmployeeController::class);
+
+    // Import routes
+    Route::post('employee/import', [SchEmployeeController::class, 'import'])->name('employee.import');
+    Route::post('student/import', [SchStudentController::class, 'import'])->name('student.import');
 
     Route::get('dashboard', [App\Http\Controllers\Sch\DashboardController::class, 'index'])->name('sch.dashboard');
     // Exam Participants

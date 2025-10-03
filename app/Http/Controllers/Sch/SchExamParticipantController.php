@@ -16,6 +16,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Yajra\DataTables\Facades\DataTables;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ParticipantCardsExport;
 
 class SchExamParticipantController extends Controller
 {
@@ -287,6 +289,7 @@ class SchExamParticipantController extends Controller
             ->where('school_id', $schoolId)
             ->get()
             ->map(function ($participant) {
+                $user = $participant->participant;
                 return [
                     'name' => $this->participantName($participant),
                     'identifier' => $this->participantIdentifier($participant),
@@ -294,6 +297,9 @@ class SchExamParticipantController extends Controller
                     'exam_name' => $participant->exam->exam_name,
                     'exam_code' => $participant->exam->exam_code,
                     'school_name' => Auth::guard('schools')->user()->school_name,
+                    'photo' => $user ? ($participant->participant_type === \App\Models\Employee::class ? $user->employee_photo : $user->student_photo) : null,
+                    'password' => 'password123', // Default password for all users
+                    'meta' => $this->participantMeta($participant),
                 ];
             });
 

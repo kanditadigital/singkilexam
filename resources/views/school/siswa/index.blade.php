@@ -6,6 +6,9 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-th-list"></i> Data Siswa</h4>
                 <div class="ml-auto">
+                    <button type="button" class="btn btn-success mr-2" data-toggle="modal" data-target="#importModal">
+                        <i class="fas fa-upload"></i> Import Excel
+                    </button>
                     <a href="{{ route('sch.student.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                 </div>
             </div>
@@ -104,4 +107,34 @@
 
     });
 </script>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">Import Data Siswa</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ route('sch.student.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="file">Pilih File Excel (.xlsx atau .xls)</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                    </div>
+                    <small class="form-text text-muted">
+                        Format kolom: nama_siswa, nisn, jenis_kelamin (L/P)
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endpush

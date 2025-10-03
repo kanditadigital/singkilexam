@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Sch;
 
-use App\Models\Student;
-use Illuminate\Http\Request;
-use App\Services\KanditaService;
 use App\Http\Controllers\Controller;
+use App\Imports\StudentImport;
 use App\Models\School;
+use App\Models\Student;
+use App\Services\KanditaService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class SchStudentController extends Controller
@@ -165,5 +167,19 @@ class SchStudentController extends Controller
         Student::where('id', $id)->delete();
         toast('Siswa berhasil dihapus', 'success');
         return response()->json(['success' => true]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        $school = Auth::guard('schools')->user();
+
+        Excel::import(new StudentImport($school->id, $school->branch_id), $request->file('file'));
+
+        toast('Data siswa berhasil diimpor', 'success');
+        return redirect()->route('sch.student.index');
     }
 }

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Sch;
 
 use App\Http\Controllers\Controller;
+use App\Imports\EmployeeImport;
 use App\Models\Employee;
 use App\Services\KanditaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class SchEmployeeController extends Controller
@@ -132,5 +134,19 @@ class SchEmployeeController extends Controller
 
         toast('Data guru/staff berhasil dihapus', 'success');
         return response()->json(['success' => true]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        $school = Auth::guard('schools')->user();
+
+        Excel::import(new EmployeeImport($school->id, $school->branch_id), $request->file('file'));
+
+        toast('Data guru/staff berhasil diimpor', 'success');
+        return redirect()->route('sch.employee.index');
     }
 }

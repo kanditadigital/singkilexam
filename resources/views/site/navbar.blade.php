@@ -8,6 +8,7 @@
         <div class="navbar-nav ms-auto">
           <a class="nav-link me-3" aria-current="page" href="/">Beranda</a>
           <a class="nav-link me-3" href="#statistic">Statistik</a>
+          <a class="nav-link me-3" href="{{ route('exambrowser') }}">Exambrowser</a>
           <a class="nav-link" href="{{ route('live-score') }}">Live Score</a>
         </div>
       </div>
