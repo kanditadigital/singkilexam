@@ -26,12 +26,14 @@ return new class extends Migration
 
         // Hapus foreign key student_id dulu
         Schema::table('exam_participants', function (Blueprint $table) {
-            $table->dropForeign(['student_id']);
+            // default nama: exam_participants_student_id_foreign
+            $table->dropForeign('exam_participants_student_id_foreign');
         });
 
-        // Baru drop unique, drop column, tambah unique baru
+        // Hapus unique lama + kolom student_id, lalu buat unique baru
         Schema::table('exam_participants', function (Blueprint $table) {
-            $table->dropUnique('exam_participants_exam_student_unique');
+            // default nama: exam_participants_exam_id_student_id_unique
+            $table->dropUnique('exam_participants_exam_id_student_id_unique');
             $table->dropColumn('student_id');
             $table->unique(
                 ['exam_id', 'participant_type', 'participant_id'],
@@ -39,23 +41,25 @@ return new class extends Migration
             );
         });
 
-        // Exam participant logs
+        // Tambah kolom baru di exam_participant_logs
         Schema::table('exam_participant_logs', function (Blueprint $table) {
             $table->string('participant_type')->nullable()->after('school_id');
             $table->unsignedBigInteger('participant_id')->nullable()->after('participant_type');
         });
 
+        // Migrasi data di logs
         DB::table('exam_participant_logs')->update([
             'participant_type' => Student::class,
             'participant_id'   => DB::raw('student_id'),
         ]);
 
-        // Hapus foreign key student_id dulu
+        // Hapus foreign key student_id dulu di logs
         Schema::table('exam_participant_logs', function (Blueprint $table) {
-            $table->dropForeign(['student_id']);
+            // default nama: exam_participant_logs_student_id_foreign
+            $table->dropForeign('exam_participant_logs_student_id_foreign');
         });
 
-        // Baru drop column
+        // Baru drop kolom student_id di logs
         Schema::table('exam_participant_logs', function (Blueprint $table) {
             $table->dropColumn('student_id');
         });
@@ -97,7 +101,7 @@ return new class extends Migration
         // Baru drop kolom tambahan & buat unique lama lagi
         Schema::table('exam_participants', function (Blueprint $table) {
             $table->dropColumn(['participant_type', 'participant_id']);
-            $table->unique(['exam_id', 'student_id'], 'exam_participants_exam_student_unique');
+            $table->unique(['exam_id', 'student_id'], 'exam_participants_exam_id_student_id_unique');
         });
 
         Schema::enableForeignKeyConstraints();
