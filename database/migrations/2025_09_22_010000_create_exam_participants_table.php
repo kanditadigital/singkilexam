@@ -12,11 +12,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->string('participant_type');
+            $table->unsignedBigInteger('participant_id');
             $table->foreignId('created_by')->nullable()->constrained('schools')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['exam_id', 'student_id'], 'exam_participants_exam_student_unique');
+            $table->unique(['exam_id', 'participant_type', 'participant_id'], 'exam_participants_unique_participant');
         });
     }
 

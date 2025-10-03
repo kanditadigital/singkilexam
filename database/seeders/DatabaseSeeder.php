@@ -27,11 +27,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Branch::create([
-            'branch_name'       => 'Cabdin Singkil',
-            'email'             => 'cabdin@gmail.com',
-            'password'          => Hash::make('cabdin123'),
-            'branch_phone'      => '081234567890',
-            'branch_address'    => 'Jl. Raya Singkil',
+            'branch_name' => 'Cabdin Singkil',
+            'email' => 'cabdin@gmail.com',
+            'password' => Hash::make('cabdin123'),
+            'branch_phone' => '081234567890',
+            'branch_address' => 'Jl. Raya Singkil',
         ]);
 
         School::create([
@@ -43,12 +43,15 @@ class DatabaseSeeder extends Seeder
             'password_text' => 'sekolah*',
             'school_phone' => '081234567890',
             'school_address' => 'Jl. Raya Singkil',
+            'is_active' => true,
         ]);
 
         Employee::create([
             'branch_id' => 1,
             'school_id' => 1,
             'employee_name' => 'Puguh Sulistyo Pambudi, S.Kom',
+            'email' => 'puguhguru@gmail.com',
+            'employee_phone' => '081234567891',
             'username' => 'puguhguru',
             'password' => Hash::make('employee123'),
             'pass_text' => 'employee123',
@@ -69,7 +72,7 @@ class DatabaseSeeder extends Seeder
 
         Exam::create([
             'exam_type' => 'TKA',
-            'exam_name' => 'TRyout TKA SMA',
+            'exam_name' => 'Tryout TKA SMA',
             'exam_description' => 'Ujian Akhir Semester',
             'exam_code' => 'TRYTKA',
             'exam_status' => 'Active',

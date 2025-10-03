@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->string('participant_type');
+            $table->unsignedBigInteger('participant_id');
             $table->foreignId('performed_by')->nullable()->constrained('schools')->nullOnDelete();
             $table->string('action');
             $table->json('meta')->nullable();

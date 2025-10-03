@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('students', function (Blueprint $table) {
@@ -20,15 +17,13 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('password');
             $table->string('pass_text');
+            $table->rememberToken();
             $table->enum('student_gender', ['Laki-laki', 'Perempuan'])->default('Laki-laki');
             $table->string('student_photo')->nullable();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('students');

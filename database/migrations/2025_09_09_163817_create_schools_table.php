@@ -3,13 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Hash;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('schools', function (Blueprint $table) {
@@ -19,6 +15,7 @@ return new class extends Migration
             $table->string('school_name');
             $table->string('email')->unique();
             $table->string('password');
+            $table->boolean('is_active')->default(true);
             $table->string('password_text');
             $table->string('school_phone');
             $table->string('school_address');
@@ -26,9 +23,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('schools');
