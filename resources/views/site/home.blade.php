@@ -1,10 +1,15 @@
 @extends('site.main')
 
 @section('content')
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <div class="home-header d-flex align-items-center">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-8"></div>
+            <div class="row justify-content-center align-items-center">
+                <div class="col-md-8">
+                    <h1 class="hero-title">Selamat Datang di Sistem Ujian Online</h1>
+                    <p class="hero-subtitle">Platform terpercaya untuk mengelola dan melaksanakan ujian secara daring dengan mudah dan efisien.</p>
+                    <a href="#about" class="btn btn-hero">Pelajari Lebih Lanjut</a>
+                </div>
                 <div class="col-md-4">
                     <div class="card card-login shadow">
                         <div class="card-body">
@@ -33,21 +38,17 @@
                                     <span class="input-group-text" id="basic-addon1"><i class="fa-solid fa-barcode"></i></span>
                                     <input type="text" class="form-control" name="captcha" placeholder="Kode Keamanan" required>
                                 </div>
-                                <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                                    <label class="custom-control-label" for="remember">Ingat saya</label>
-                                </div>
                                 <div class="mb-3">
                                     <button type="submit" class="btn btn-cat w-100">Login</button>
                                 </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="home-about p-5">
+    <div id="about" class="home-about p-5">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-md-6 text-center">
@@ -56,70 +57,99 @@
             </div>
         </div>
     </div>
-    @if($publicLiveScoreEnabled)
-        <div class="live-score-public py-5">
-            <div class="container">
-                <div class="row mb-4 align-items-center">
-                    <div class="col-lg-6">
-                        <h3 class="mb-2"><i class="fa-solid fa-chart-line text-primary"></i> Live Score Ujian</h3>
-                        <p class="text-muted mb-0">Pantau nilai peserta secara realtime. Data diperbarui otomatis.</p>
-                    </div>
-                    <div class="col-lg-6 text-lg-right mt-3 mt-lg-0">
-                        <span class="badge badge-success" id="public-live-score-status">Aktif</span>
-                        <span class="text-muted small d-block mt-2" id="public-live-score-updated">Menunggu data...</span>
+    <div id="statistic" class="statistics-section py-5 bg-light">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 text-center mb-4">
+                    <h2>Statistik Sistem</h2>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Cabang Dinas</h5>
+                            <h3 class="text-primary">{{ $cabdinCount }}</h3>
+                        </div>
                     </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="public-filter-exam" class="small text-uppercase text-muted">Pilih Ujian</label>
-                        <select id="public-filter-exam" class="form-control">
-                            <option value="">Semua Ujian</option>
-                            @foreach($publicLiveScoreExams as $exam)
-                                <option value="{{ $exam->id }}">{{ $exam->exam_name }} ({{ $exam->exam_code }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="public-filter-branch" class="small text-uppercase text-muted">Cabdin</label>
-                        <select id="public-filter-branch" class="form-control">
-                            <option value="">Semua Cabdin</option>
-                            @foreach($publicLiveScoreBranches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="public-filter-school" class="small text-uppercase text-muted">Sekolah</label>
-                        <select id="public-filter-school" class="form-control" disabled>
-                            <option value="">Semua Sekolah</option>
-                        </select>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Sekolah</h5>
+                            <h3 class="text-success">{{ $schoolCount }}</h3>
+                        </div>
                     </div>
                 </div>
-
-                <div class="table-responsive shadow-sm rounded overflow-hidden">
-                    <table class="table table-striped mb-0" id="public-live-score-table">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Nama Peserta</th>
-                                <th>Cabdin</th>
-                                <th>Sekolah</th>
-                                <th class="text-right">Nilai</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">Memuat data live score...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Guru</h5>
+                            <h3 class="text-warning">{{ $teacherCount }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Siswa</h5>
+                            <h3 class="text-danger">{{ $studentCount }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Grafik Statistik</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="statisticsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Data Statistik Hierarki</h5>
+                        </div>
+                        <div class="card-body">
+                            <table id="statisticsTable" class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Nama Cabang Dinas</th>
+                                        <th>Jumlah Sekolah</th>
+                                        <th>Jumlah Guru</th>
+                                        <th>Jumlah Siswa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($branches as $branch)
+                                    <tr data-branch-id="{{ $branch->id }}">
+                                        <td></td>
+                                        <td>{{ $branch->branch_name }}</td>
+                                        <td>{{ $branch->school_count }}</td>
+                                        <td>{{ $branch->teacher_count }}</td>
+                                        <td>{{ $branch->student_count }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    @endif
+    </div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('refresh-captcha').addEventListener('click', function () {
@@ -129,155 +159,126 @@
                     document.getElementById('captcha-img').src = data.captcha;
                 });
         });
-        @if($publicLiveScoreEnabled)
-        const publicRoutes = {
-            data: @json(route('public.live-score')),
-            schoolsByBranch: @json(route('public.live-score.schools', ['branch' => '__BRANCH__'])),
-        };
 
-        const liveScoreTableBody = $('#public-live-score-table tbody');
-        const liveScoreUpdatedEl = $('#public-live-score-updated');
-        const liveScoreStatusEl = $('#public-live-score-status');
-        const branchSelect = $('#public-filter-branch');
-        const schoolSelect = $('#public-filter-school');
-        const examSelect = $('#public-filter-exam');
-        let publicLiveScoreTimer = null;
-
-        function updateStatusLabel(isLoading) {
-            if (isLoading) {
-                liveScoreStatusEl.text('Memuat data...');
+        // Initialize Chart
+        const ctx = document.getElementById('statisticsChart').getContext('2d');
+        const statisticsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Cabang Dinas', 'Sekolah', 'Guru', 'Siswa'],
+                datasets: [{
+                    label: 'Jumlah',
+                    data: [{{ $cabdinCount }}, {{ $schoolCount }}, {{ $teacherCount }}, {{ $studentCount }}],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 205, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
-        }
+        });
 
-        function updateBadge(enabled) {
-            if (enabled) {
-                $('#public-live-score-status')
-                    .removeClass('badge-secondary')
-                    .addClass('badge-success')
-                    .text('Aktif');
+        // Initialize DataTable with hierarchical rows
+        const table = $('#statisticsTable').DataTable({
+            paging: false,
+            searching: false,
+            info: false,
+            columnDefs: [
+                {
+                    targets: 0,
+                    className: 'details-control',
+                    orderable: false,
+                    data: null,
+                    defaultContent: '+',
+                    width: '10%'
+                }
+            ]
+        });
+
+        // Add event listener for opening and closing details
+        $('#statisticsTable tbody').on('click', 'td.details-control', function () {
+            const tr = $(this).closest('tr');
+            const row = table.row(tr);
+
+            if (row.child.isShown()) {
+                // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+                $(this).html('+');
             } else {
-                $('#public-live-score-status')
-                    .removeClass('badge-success')
-                    .addClass('badge-secondary')
-                    .text('Nonaktif');
-            }
-        }
+                // Open this row
+                const branchId = tr.data('branch-id');
+                const branches = @json($branches);
+                const branch = branches.find(b => b.id == branchId);
 
-        function buildParams() {
-            return {
-                exam_id: examSelect.val() || '',
-                branch_id: branchSelect.val() || '',
-                school_id: schoolSelect.val() || '',
-            };
-        }
-
-        function renderLiveScoreRows(items) {
-            if (!items || items.length === 0) {
-                liveScoreTableBody.html('<tr><td colspan="4" class="text-center text-muted py-4">Belum ada nilai yang tersedia.</td></tr>');
-                return;
-            }
-
-            const rows = items.map(function (item) {
-                const score = item.score_formatted || '-';
-                return `
-                    <tr>
-                        <td>
-                            <div class="font-weight-semibold">${item.participant_name || '-'}</div>
-                            <div class="small text-muted">${item.participant_label || ''}</div>
-                        </td>
-                        <td>${item.branch_name || '-'}</td>
-                        <td>${item.school_name || '-'}</td>
-                        <td class="text-right"><strong>${score}</strong></td>
-                    </tr>
-                `;
-            }).join('');
-
-            liveScoreTableBody.html(rows);
-        }
-
-        function fetchPublicLiveScore() {
-            const params = buildParams();
-            const query = new URLSearchParams(params).toString();
-            updateStatusLabel(true);
-
-            fetch(publicRoutes.data + '?' + query)
-                .then(function (response) {
-                    if (!response.ok) {
-                        if (response.status === 403) {
-                            liveScoreStatusEl.text('Live score publik sedang nonaktif.');
-                            liveScoreStatusEl.removeClass('text-muted').addClass('text-danger');
-                            updateBadge(false);
-                            return response.json();
-                        }
-                        throw new Error('Gagal memuat data');
-                    }
-                    return response.json();
-                })
-                .then(function (payload) {
-                    if (!payload) {
-                        return;
-                    }
-                    if (payload.data) {
-                        updateBadge(true);
-                        renderLiveScoreRows(payload.data);
-                    }
-                    if (payload.generated_at) {
-                        liveScoreStatusEl.text('Diperbarui: ' + new Date(payload.generated_at).toLocaleString('id-ID'));
-                    }
-                })
-                .catch(function () {
-                    liveScoreTableBody.html('<tr><td colspan="4" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
-                    liveScoreStatusEl.text('Tidak dapat memuat data.');
-                });
-        }
-
-        function startPublicLiveScore() {
-            if (publicLiveScoreTimer) {
-                clearInterval(publicLiveScoreTimer);
-            }
-            publicLiveScoreTimer = setInterval(fetchPublicLiveScore, 10000);
-        }
-
-        function loadPublicSchools(branchId) {
-            if (!branchId) {
-                schoolSelect.prop('disabled', false).html('<option value="">Semua Sekolah</option>');
-                fetchPublicLiveScore();
-                return;
-            }
-            schoolSelect.prop('disabled', true).html('<option value="">Memuat sekolah...</option>');
-            const url = publicRoutes.schoolsByBranch.replace('__BRANCH__', branchId);
-            fetch(url)
-                .then(function (response) { return response.json(); })
-                .then(function (schools) {
-                    const options = schools.map(function (school) {
-                        return `<option value="${school.id}">${school.school_name}</option>`;
-                    }).join('');
-                    schoolSelect.html('<option value="">Semua Sekolah</option>' + options).prop('disabled', false);
-                    fetchPublicLiveScore();
-                })
-                .catch(function () {
-                    schoolSelect.html('<option value="">Gagal memuat sekolah</option>').prop('disabled', false);
-                });
-        }
-
-        examSelect.on('change', fetchPublicLiveScore);
-        branchSelect.on('change', function () {
-            const selectedBranch = $(this).val();
-            loadPublicSchools(selectedBranch);
-        });
-        schoolSelect.on('change', fetchPublicLiveScore);
-
-        fetchPublicLiveScore();
-        startPublicLiveScore();
-        updateBadge(true);
-
-        window.addEventListener('beforeunload', function () {
-            if (publicLiveScoreTimer) {
-                clearInterval(publicLiveScoreTimer);
+                row.child(format(branch)).show();
+                tr.addClass('shown');
+                $(this).html('-');
             }
         });
-        @endif
+
+        function format(branch) {
+            let html = '<table class="table table-sm school-table"><thead><tr><th></th><th>Nama Sekolah</th><th>Jumlah Guru</th><th>Jumlah Siswa</th></tr></thead><tbody>';
+            branch.schools.forEach(school => {
+                html += `<tr data-school-id="${school.id}">
+                    <td class="school-control" style="cursor:pointer; width:20px;">+</td>
+                    <td>${school.school_name}</td>
+                    <td>${school.employees.length}</td>
+                    <td>${school.students.length}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Add event listener for school expansion
+        $('#statisticsTable').on('click', '.school-control', function() {
+            const tr = $(this).closest('tr');
+            const schoolId = tr.data('school-id');
+            const branches = @json($branches);
+            const school = branches.flatMap(b => b.schools).find(s => s.id == schoolId);
+
+            if (school) {
+                if (tr.next().hasClass('school-details-row')) {
+                    // Already expanded, collapse
+                    tr.next().remove();
+                    $(this).html('+');
+                } else {
+                    // Expand
+                    tr.after(`<tr class="school-details-row"><td colspan="4">${formatSchoolDetails(school)}</td></tr>`);
+                    $(this).html('-');
+                }
+            }
+        });
+
+        function formatSchoolDetails(school) {
+            let html = '<div class="row"><div class="col-md-6"><h6>Guru</h6><table class="table table-sm"><thead><tr><th>Nama Guru</th></tr></thead><tbody>';
+            school.employees.forEach(employee => {
+                html += `<tr><td>${employee.employee_name}</td></tr>`;
+            });
+            html += '</tbody></table></div><div class="col-md-6"><h6>Siswa</h6><table class="table table-sm"><thead><tr><th>Nama Siswa</th></tr></thead><tbody>';
+            school.students.forEach(student => {
+                html += `<tr><td>${student.student_name}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            return html;
+        }
     });
-    </script>
+</script>
 
 @endpush

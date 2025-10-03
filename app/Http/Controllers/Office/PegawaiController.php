@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Employee;
 use App\Models\Branch;
 use App\Services\EmployeeService;
@@ -138,8 +139,7 @@ class PegawaiController extends Controller
         ];
 
         if ($rawPassword !== null) {
-            $payload['password'] = $rawPassword;
-            $payload['pass_text'] = $rawPassword;
+            $payload['password'] = Hash::make($rawPassword);
         }
 
         return $payload;

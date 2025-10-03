@@ -18,7 +18,6 @@
                             <th>NPSN</th>
                             <th>Nama Sekolah</th>
                             <th>No. Telepon</th>
-                            <th>Password</th>
                             <th>Opsi</th>
                         </tr>
                     </thead>
@@ -47,7 +46,6 @@
                 { data: 'school_npsn', name: 'school_npsn' },
                 { data: 'school_name', name: 'school_name' },
                 { data: 'school_phone', name: 'school_phone' },
-                { data: 'password_text', name: 'password_text' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
             ],
             language: {

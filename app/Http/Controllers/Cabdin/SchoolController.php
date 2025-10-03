@@ -66,7 +66,6 @@ class SchoolController extends Controller
             'school_name'    => $request->school_name,
             'email'          => $request->email,
             'password'       => Hash::make($defaultPassword),
-            'password_text'  => $defaultPassword,
             'school_phone'   => $request->school_phone,
             'school_address' => $request->school_address,
             'is_active'      => true,
@@ -108,10 +107,8 @@ class SchoolController extends Controller
         // Password logic
         if ($request->filled('password')) {
             $password = Hash::make($request->password);
-            $passwordText = $request->password;
         } else {
             $password = $school->password; // tidak diubah
-            $passwordText = $school->password_text;
         }
 
         $school->update([
@@ -120,7 +117,6 @@ class SchoolController extends Controller
             'school_name'    => $request->school_name,
             'email'          => $request->email,
             'password'       => $password,
-            'password_text'  => $passwordText,
             'school_phone'   => $request->school_phone,
             'school_address' => $request->school_address,
             'is_active'      => true,
@@ -157,8 +153,7 @@ class SchoolController extends Controller
         $newPassword = $this->generatePassword();
 
         $school->update([
-            'password'      => Hash::make($newPassword),
-            'password_text' => $newPassword, // jaga konsistensi bila masih dibutuhkan
+            'password' => Hash::make($newPassword),
         ]);
 
         // Jika permintaan datang dari AJAX, kembalikan JSON agar bisa ditampilkan di Swal

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Yajra\DataTables\Facades\DataTables;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
 
 class SchExamParticipantController extends Controller
 {
@@ -271,5 +273,71 @@ class SchExamParticipantController extends Controller
         return Student::whereIn('id', $ids)
             ->where('school_id', $schoolId)
             ->pluck('id');
+    }
+
+    public function printCards(Exam $exam)
+    {
+        $schoolId = Auth::guard('schools')->id();
+        if (!$exam) {
+            abort(404);
+        }
+
+        $participants = ExamParticipant::with(['participant', 'exam'])
+            ->where('exam_id', $exam->id)
+            ->where('school_id', $schoolId)
+            ->get()
+            ->map(function ($participant) {
+                return [
+                    'name' => $this->participantName($participant),
+                    'identifier' => $this->participantIdentifier($participant),
+                    'type' => $this->typeLabelFromClass($participant->participant_type),
+                    'exam_name' => $participant->exam->exam_name,
+                    'exam_code' => $participant->exam->exam_code,
+                    'school_name' => Auth::guard('schools')->user()->school_name,
+                ];
+            });
+
+        $pdf = Pdf::loadView('school.exam-participants.cards-pdf', [
+            'participants' => $participants,
+            'exam' => $exam,
+            'school' => Auth::guard('schools')->user(),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'kartu-peserta-' . Str::slug($exam->exam_name) . '-' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    public function printMinutes(Exam $exam)
+    {
+        $schoolId = Auth::guard('schools')->id();
+        if (!$exam) {
+            abort(404);
+        }
+
+        $participants = ExamParticipant::with(['participant'])
+            ->where('exam_id', $exam->id)
+            ->where('school_id', $schoolId)
+            ->get()
+            ->map(function ($participant) {
+                return [
+                    'name' => $this->participantName($participant),
+                    'identifier' => $this->participantIdentifier($participant),
+                    'type' => $this->typeLabelFromClass($participant->participant_type),
+                    'meta' => $this->participantMeta($participant),
+                ];
+            });
+
+        $pdf = Pdf::loadView('school.exam-participants.minutes-pdf', [
+            'participants' => $participants,
+            'exam' => $exam,
+            'school' => Auth::guard('schools')->user(),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'berita-acara-' . Str::slug($exam->exam_name) . '-' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }

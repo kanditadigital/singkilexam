@@ -18,7 +18,6 @@
                             <th>Nama Sekolah</th>
                             <th>Nama Siswa</th>
                             <th>Username</th>
-                            <th>Password</th>
                             <th>Jenis Kelamin</th>
                             <th>Opsi</th>
                         </tr>
@@ -48,7 +47,6 @@
                 { data: 'school_name', name: 'school_name' },
                 { data: 'student_name', name: 'student_name' },
                 { data: 'username', name: 'username' },
-                { data: 'pass_text', name: 'pass_text' },
                 { data: 'student_gender', name: 'student_gender' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
             ],

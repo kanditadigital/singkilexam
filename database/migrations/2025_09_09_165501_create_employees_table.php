@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('employee_phone')->nullable();
             $table->string('username')->unique();
             $table->string('password');
-            $table->string('pass_text');
             $table->rememberToken();
             $table->enum('employee_type', ['Guru', 'Staff', 'Kepala Sekolah'])->default('Guru');
             $table->timestamps();

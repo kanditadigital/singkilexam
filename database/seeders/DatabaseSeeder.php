@@ -40,7 +40,6 @@ class DatabaseSeeder extends Seeder
             'school_name' => 'Sekolah Singkil',
             'email' => 'sekolah@gmail.com',
             'password' => Hash::make('sekolah*'),
-            'password_text' => 'sekolah*',
             'school_phone' => '081234567890',
             'school_address' => 'Jl. Raya Singkil',
             'is_active' => true,
@@ -54,7 +53,6 @@ class DatabaseSeeder extends Seeder
             'employee_phone' => '081234567891',
             'username' => 'puguhguru',
             'password' => Hash::make('employee123'),
-            'pass_text' => 'employee123',
             'employee_type' => 'Kepala Sekolah',
         ]);
 
@@ -65,7 +63,6 @@ class DatabaseSeeder extends Seeder
             'student_nisn' => '1234567890',
             'username' => 'rasyid',
             'password' => Hash::make('student123'),
-            'pass_text' => 'student123',
             'student_gender' => 'Laki-laki',
             'student_photo' => 'https://via.placeholder.com/150',
         ]);

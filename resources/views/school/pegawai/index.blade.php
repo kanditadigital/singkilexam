@@ -16,7 +16,6 @@
                             <th>No.</th>
                             <th>Nama</th>
                             <th>Username</th>
-                            <th>Password</th>
                             <th>Email</th>
                             <th>Tipe</th>
                             <th>Opsi</th>
@@ -45,7 +44,6 @@
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'employee_name', name: 'employee_name' },
                 { data: 'username', name: 'username' },
-                { data: 'pass_text', name: 'pass_text' },
                 { data: 'email', name: 'email' },
                 { data: 'employee_type', name: 'employee_type' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },

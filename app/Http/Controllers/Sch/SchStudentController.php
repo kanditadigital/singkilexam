@@ -89,13 +89,12 @@ class SchStudentController extends Controller
             'student_nisn'      => $request->student_nisn,
             'username'          => $request->student_nisn,
             'password'          => Hash::make($rawPassword),
-            'pass_text'         => $rawPassword,
             'student_gender'    => $request->student_gender,
             'student_photo'     => $photoPath,
         ]);
 
         toast('Siswa berhasil ditambahkan', 'success');
-        return redirect()->route('student.index');
+        return redirect()->route('sch.student.index');
     }
 
     /**
@@ -150,13 +149,12 @@ class SchStudentController extends Controller
             'student_nisn'      => $request->student_nisn,
             'username'          => $request->student_nisn,
             'password'          => Hash::make($rawPassword),
-            'pass_text'         => $rawPassword,
             'student_gender'    => $request->student_gender,
             'student_photo'     => $photoPath,
         ]);
 
         toast('Siswa berhasil ditambahkan', 'success');
-        return redirect()->route('student.index');
+        return redirect()->route('sch.student.index');
     }
 
     /**

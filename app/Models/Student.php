@@ -20,9 +20,13 @@ class Student extends Authenticatable
         'student_nisn',
         'username',
         'password',
-        'pass_text',
         'student_gender',
         'student_photo',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     public function getAuthIdentifierName()

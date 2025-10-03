@@ -4,28 +4,43 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
-use App\Models\Exam;
-use App\Models\SiteSetting;
+use App\Models\Employee;
+use App\Models\School;
+use App\Models\Student;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $publicLiveScoreEnabled = SiteSetting::getBool('live_score_public_enabled');
+        // Data for charts
+        $studentCount = Student::count();
+        $teacherCount = Employee::where('employee_type', 'Guru')->count();
+        $cabdinCount = Branch::count();
+        $schoolCount = School::count();
 
-        $exams = $publicLiveScoreEnabled
-            ? Exam::orderBy('exam_name')->get(['id', 'exam_name', 'exam_code'])
-            : collect();
-
-        $branches = $publicLiveScoreEnabled
-            ? Branch::orderBy('branch_name')->get(['id', 'branch_name'])
-            : collect();
+        // Hierarchical data for data table
+        $branches = Branch::with(['schools' => function($query) {
+            $query->with(['employees' => function($q) {
+                $q->where('employee_type', 'Guru');
+            }, 'students']);
+        }])->get()->map(function($branch) {
+            $branch->school_count = $branch->schools->count();
+            $branch->teacher_count = $branch->schools->sum(function($school) {
+                return $school->employees->count();
+            });
+            $branch->student_count = $branch->schools->sum(function($school) {
+                return $school->students->count();
+            });
+            return $branch;
+        });
 
         return view('site.home', [
             'title' => 'Computer Assisted Test',
-            'publicLiveScoreEnabled' => $publicLiveScoreEnabled,
-            'publicLiveScoreExams' => $exams,
-            'publicLiveScoreBranches' => $branches,
+            'studentCount' => $studentCount,
+            'teacherCount' => $teacherCount,
+            'cabdinCount' => $cabdinCount,
+            'schoolCount' => $schoolCount,
+            'branches' => $branches,
         ]);
     }
 }

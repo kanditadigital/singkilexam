@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('student_nisn')->unique();
             $table->string('username')->unique();
             $table->string('password');
-            $table->string('pass_text');
             $table->rememberToken();
             $table->enum('student_gender', ['Laki-laki', 'Perempuan'])->default('Laki-laki');
             $table->string('student_photo')->nullable();

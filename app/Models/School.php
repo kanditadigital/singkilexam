@@ -20,7 +20,6 @@ class School extends Authenticatable
         'school_name',
         'email',
         'password',
-        'password_text',
         'school_phone',
         'school_address',
         'is_active',

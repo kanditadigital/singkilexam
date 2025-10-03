@@ -20,12 +20,12 @@ class Employee extends Authenticatable
         'employee_phone',
         'username',
         'password',
-        'pass_text',
         'employee_type',
     ];
 
     protected $hidden = [
         'password',
+        'pass_text',
         'remember_token',
     ];
 

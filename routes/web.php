@@ -50,6 +50,7 @@ Route::get('refresh-captcha', fn() => response()->json(['captcha' => captcha_src
     ->name('captcha.refresh');
 
 // Live Score publik
+Route::get('live-score', [SiteLiveScoreController::class, 'index'])->name('live-score');
 Route::get('live-score/stream', [SiteLiveScoreController::class, 'data'])->name('public.live-score');
 Route::get('live-score/stream/schools/{branch}', [SiteLiveScoreController::class, 'schoolsByBranch'])
     ->name('public.live-score.schools');
@@ -151,6 +152,8 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
     Route::get('exam-participants/registered', [SchExamParticipantController::class, 'registered'])->name('exam-participants.registered');
     Route::post('exam-participants', [SchExamParticipantController::class, 'store'])->name('exam-participants.store');
     Route::delete('exam-participants/{participant}', [SchExamParticipantController::class, 'destroy'])->name('exam-participants.destroy');
+    Route::get('exam-participants/print-cards/{exam}', [SchExamParticipantController::class, 'printCards'])->name('exam-participants.print-cards');
+    Route::get('exam-participants/print-minutes/{exam}', [SchExamParticipantController::class, 'printMinutes'])->name('exam-participants.print-minutes');
 });
 
 

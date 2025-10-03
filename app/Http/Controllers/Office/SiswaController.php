@@ -183,7 +183,6 @@ class SiswaController extends Controller
 
         if ($rawPassword !== null) {
             $payload['password'] = Hash::make($rawPassword);
-            $payload['pass_text'] = $rawPassword;
         }
 
         return $payload;

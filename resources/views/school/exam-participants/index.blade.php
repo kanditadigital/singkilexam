@@ -43,6 +43,16 @@
                             <i class="fas fa-save"></i> Simpan
                         </button>
                     </div>
+                    <div class="form-group col-md-2">
+                        <button id="btn-print-cards" class="btn btn-info btn-block" disabled>
+                            <i class="fas fa-print"></i> Kartu Peserta
+                        </button>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <button id="btn-print-minutes" class="btn btn-secondary btn-block" disabled>
+                            <i class="fas fa-file-alt"></i> Berita Acara
+                        </button>
+                    </div>
                 </div>
 
                 <hr>
@@ -114,11 +124,15 @@
 @push('scripts')
 <script>
     const destroyTemplate = @json(route('sch.exam-participants.destroy', ['participant' => ':id']));
+    const printCardsTemplate = @json(route('sch.exam-participants.print-cards', ['exam' => ':exam']));
+    const printMinutesTemplate = @json(route('sch.exam-participants.print-minutes', ['exam' => ':exam']));
     const routes = {
         students: @json(route('sch.exam-participants.students')),
         registered: @json(route('sch.exam-participants.registered')),
         store: @json(route('sch.exam-participants.store')),
-        destroy: (id) => destroyTemplate.replace(':id', id)
+        destroy: (id) => destroyTemplate.replace(':id', id),
+        printCards: (examId) => printCardsTemplate.replace(':exam', examId),
+        printMinutes: (examId) => printMinutesTemplate.replace(':exam', examId)
     };
 
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
@@ -127,6 +141,8 @@
     const $genderFilter = $('#filter_gender');
     const $genderGroup = $('#gender-filter-group');
     const $saveButton = $('#btn-save-participants');
+    const $printCardsButton = $('#btn-print-cards');
+    const $printMinutesButton = $('#btn-print-minutes');
     const $helper = $('#exam-helper');
 
     let studentsTable = null;
@@ -150,6 +166,12 @@
 
     function enableSaveButton() {
         $saveButton.prop('disabled', selectedParticipantIds().length === 0);
+    }
+
+    function enablePrintButtons() {
+        const examId = currentExamId();
+        $printCardsButton.prop('disabled', !examId);
+        $printMinutesButton.prop('disabled', !examId);
     }
 
     function buildStudentsTable() {
@@ -217,12 +239,14 @@
         if (!examId) {
             $helper.show();
             $saveButton.prop('disabled', true);
+            enablePrintButtons();
             if (studentsTable) studentsTable.clear().draw();
             if (participantsTable) participantsTable.clear().draw();
             return;
         }
 
         $helper.hide();
+        enablePrintButtons();
 
         if (studentsTable) {
             studentsTable.ajax.reload();
@@ -334,6 +358,24 @@
                 const message = xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan peserta.';
                 Swal.fire('Gagal', message, 'error');
             });
+        });
+
+        $printCardsButton.on('click', function () {
+            const examId = currentExamId();
+            if (!examId) {
+                Swal.fire('Informasi', 'Pilih ujian terlebih dahulu.', 'info');
+                return;
+            }
+            window.open(routes.printCards(examId), '_blank');
+        });
+
+        $printMinutesButton.on('click', function () {
+            const examId = currentExamId();
+            if (!examId) {
+                Swal.fire('Informasi', 'Pilih ujian terlebih dahulu.', 'info');
+                return;
+            }
+            window.open(routes.printMinutes(examId), '_blank');
         });
     });
 </script>

@@ -143,8 +143,7 @@ class StudentController extends Controller
 
         $rawPassword = $this->service->generatePassword();
         $student->update([
-            'password'  => Hash::make($rawPassword),
-            'pass_text' => $rawPassword,
+            'password' => Hash::make($rawPassword),
         ]);
 
         return response()->json([
@@ -154,7 +153,7 @@ class StudentController extends Controller
                 'nisn'   => $student->student_nisn,
                 'school' => $student->school?->school_name,
             ],
-            'password'=> $rawPassword,
+            'password' => $rawPassword,
         ]);
     }
 
@@ -211,8 +210,7 @@ class StudentController extends Controller
         }
 
         if ($rawPassword !== null) {
-            $payload['password']  = Hash::make($rawPassword);
-            $payload['pass_text'] = $rawPassword;
+            $payload['password'] = Hash::make($rawPassword);
         }
 
         return $payload;

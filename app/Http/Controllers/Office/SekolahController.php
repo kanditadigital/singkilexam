@@ -74,7 +74,6 @@ class SekolahController extends Controller
             'school_name'       => $request->school_name,
             'email'             => $request->email,
             'password'          => Hash::make('sekolah*'),
-            'password_text'     => 'sekolah*',
             'school_phone'      => $request->school_phone,
             'school_address'    => $request->school_address,
         ]);

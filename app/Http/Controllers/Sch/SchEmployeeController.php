@@ -77,11 +77,10 @@ class SchEmployeeController extends Controller
             'employee_phone'    => $request->employee_phone,
             'employee_type'     => $request->employee_type,
             'password'          => Hash::make($rawPassword),
-            'pass_text'         => $rawPassword,
         ]);
 
         toast('Data guru/staff berhasil ditambahkan', 'success');
-        return redirect()->route('employee.index');
+        return redirect()->route('sch.employee.index');
     }
 
     public function edit(string $id)
@@ -118,13 +117,12 @@ class SchEmployeeController extends Controller
         if ($request->boolean('reset_password')) {
             $newPassword = $this->kanditaService->generatePassword();
             $payload['password'] = Hash::make($newPassword);
-            $payload['pass_text'] = $newPassword;
         }
 
         $employee->update($payload);
 
         toast('Data guru/staff berhasil diperbarui', 'success');
-        return redirect()->route('employee.index');
+        return redirect()->route('sch.employee.index');
     }
 
     public function destroy(string $id)
