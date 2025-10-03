@@ -24,12 +24,12 @@ return new class extends Migration
             'participant_id'   => DB::raw('student_id'),
         ]);
 
-        // Drop foreign key dulu
+        // Drop foreign key student_id (pakai nama manual)
         Schema::table('exam_participants', function (Blueprint $table) {
             $table->dropForeign('exam_participants_student_id_foreign');
         });
 
-        // Drop unique + kolom student_id, lalu tambahkan unique baru
+        // Drop unique lama + kolom student_id, lalu tambahkan unique baru dengan nama fix
         Schema::table('exam_participants', function (Blueprint $table) {
             $table->dropUnique('exam_participants_exam_id_student_id_unique');
             $table->dropColumn('student_id');
@@ -50,12 +50,12 @@ return new class extends Migration
             'participant_id'   => DB::raw('student_id'),
         ]);
 
-        // Drop foreign key dulu di logs
+        // Drop foreign key student_id di logs (pakai nama manual)
         Schema::table('exam_participant_logs', function (Blueprint $table) {
             $table->dropForeign('exam_participant_logs_student_id_foreign');
         });
 
-        // Baru drop kolom student_id di logs
+        // Drop kolom student_id di logs
         Schema::table('exam_participant_logs', function (Blueprint $table) {
             $table->dropColumn('student_id');
         });
@@ -69,7 +69,12 @@ return new class extends Migration
 
         // Rollback di exam_participant_logs
         Schema::table('exam_participant_logs', function (Blueprint $table) {
-            $table->foreignId('student_id')->nullable()->after('school_id')->constrained('students')->nullOnDelete();
+            $table->foreignId('student_id')
+                ->nullable()
+                ->after('school_id')
+                ->constrained('students')
+                ->nullOnDelete()
+                ->name('exam_participant_logs_student_id_foreign'); // kasih nama fix
         });
 
         DB::table('exam_participant_logs')->whereNotNull('participant_id')->update([
@@ -82,7 +87,12 @@ return new class extends Migration
 
         // Rollback di exam_participants
         Schema::table('exam_participants', function (Blueprint $table) {
-            $table->foreignId('student_id')->nullable()->after('school_id')->constrained('students')->nullOnDelete();
+            $table->foreignId('student_id')
+                ->nullable()
+                ->after('school_id')
+                ->constrained('students')
+                ->nullOnDelete()
+                ->name('exam_participants_student_id_foreign'); // kasih nama fix
         });
 
         DB::table('exam_participants')->whereNotNull('participant_id')->update([
@@ -94,10 +104,13 @@ return new class extends Migration
             $table->dropUnique('exam_participants_unique_participant');
         });
 
-        // Kembalikan kolom lama & unique lama
+        // Drop kolom tambahan & buat unique lama lagi dengan nama fix
         Schema::table('exam_participants', function (Blueprint $table) {
             $table->dropColumn(['participant_type', 'participant_id']);
-            $table->unique(['exam_id', 'student_id'], 'exam_participants_exam_id_student_id_unique');
+            $table->unique(
+                ['exam_id', 'student_id'],
+                'exam_participants_exam_id_student_id_unique'
+            );
         });
 
         Schema::enableForeignKeyConstraints();
