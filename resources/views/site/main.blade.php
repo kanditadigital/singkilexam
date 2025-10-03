@@ -50,9 +50,6 @@
     @endif
 
     <main>
-        <!-- Pastikan ada H1 sebagai heading utama (SEO penting) -->
-        <h1 class="text-2xl font-bold mb-4">{{ $title }}</h1>
-
         @yield('content')
     </main>
 
