@@ -63,7 +63,7 @@ class MapelController extends Controller
         ]);
         Subject::create($request->all());
         toast('Mata Pelajaran berhasil ditambahkan', 'success');
-        return redirect()->route('mapel.index');
+        return redirect()->route('disidk.mapel.index');
     }
 
     /**
@@ -121,7 +121,7 @@ class MapelController extends Controller
         ]);
         Subject::find($id)->update($request->all());
         toast()->success('Mata Pelajaran berhasil diubah');
-        return redirect()->route('mapel.index');
+        return redirect()->route('disdik.mapel.index');
     }
 
     /**

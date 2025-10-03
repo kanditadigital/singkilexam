@@ -128,7 +128,7 @@
             </div>
         </div>
 
-        <form id="pdf-form" action="{{ route('ranking.download') }}" method="GET" target="_blank" class="d-none">
+        <form id="pdf-form" action="{{ route('disdik.ranking.download') }}" method="GET" target="_blank" class="d-none">
             <input type="hidden" name="exam_id">
             <input type="hidden" name="branch_id">
             <input type="hidden" name="school_id">
@@ -204,8 +204,8 @@
     moment.locale('id');
 
     const routes = {
-        schoolsByBranch: @json(route('pegawai.getByBranch', ['branchId' => '__BRANCH__'])),
-        rankingData: @json(route('ranking.data')),
+        schoolsByBranch: @json(route('disdik.pegawai.getByBranch', ['branchId' => '__BRANCH__'])),
+        rankingData: @json(route('disdik.ranking.data')),
     };
 
     const $examSelect = $('#filter_exam');

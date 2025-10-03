@@ -6,11 +6,11 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-list"></i> Tambah Sesi Ujian</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('sesi-ujian.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
+                    <a href="{{ route('disdik.sesi-ujian.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('sesi-ujian.store') }}" method="post">
+                <form action="{{ route('disdik.sesi-ujian.store') }}" method="post">
                     @csrf
                     <div class="form-group row">
                         <div class="col-md-6">

@@ -75,7 +75,7 @@ class PegawaiController extends Controller
         Employee::create($this->employeePayload($validated, $rawPassword));
 
         toast('Pegawai berhasil ditambahkan', 'success');
-        return redirect()->route('pegawai.index');
+        return redirect()->route('disdik.pegawai.index');
     }
 
     /**
@@ -110,7 +110,7 @@ class PegawaiController extends Controller
         $employee->update($this->employeePayload($validated));
 
         toast('Pegawai berhasil diubah', 'success');
-        return redirect()->route('pegawai.index');
+        return redirect()->route('disdik.pegawai.index');
     }
 
     private function validateEmployee(Request $request, ?int $id = null): array

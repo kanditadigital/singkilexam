@@ -6,7 +6,7 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-th-list"></i> Data Sekolah</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('sekolah.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
+                    <a href="{{ route('disdik.sekolah.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                 </div>
             </div>
             <div class="card-body table-responsive">
@@ -18,6 +18,7 @@
                             <th>NPSN</th>
                             <th>Nama Sekolah</th>
                             <th>No. Telepon</th>
+                            <th>Password</th>
                             <th>Opsi</th>
                         </tr>
                     </thead>
@@ -34,7 +35,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: `{{ route('sekolah.index') }}`,
+                url: `{{ route('disdik.sekolah.index') }}`,
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -46,6 +47,7 @@
                 { data: 'school_npsn', name: 'school_npsn' },
                 { data: 'school_name', name: 'school_name' },
                 { data: 'school_phone', name: 'school_phone' },
+                { data: 'password_text', name: 'password_text' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
             ],
             language: {

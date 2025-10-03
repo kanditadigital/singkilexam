@@ -3,28 +3,12 @@
 @section('content')
     <div class="section-body">
 
-        <div class="row">
-            <div class="col-md-5">
-                <div class="card shadow">
-                    <div class="card-body table-responsive">
-                        <table class="table table-bordered table-sm">
-                            <tr>
-                                <th>Mata Pelajaran</th>
-                                <td>:</td>
-                                <td>{{ optional($subject)->subject_name ?? '-' }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="card shadow">
             <div class="card-header bg-primary text-white py-1">
-                <h4><i class="fas fa-fw fa-question"></i> Data Soal</h4>
+                <h4><i class="fas fa-fw fa-clipboard-list"></i> Data Soal &mdash; {{ optional($subject)->subject_name ?? '-' }}</h4>
                 <div class="ml-auto">
                     @if(!empty($subjectId))
-                        <a href="{{ route('soal.create', ['subject_id' => $subjectId]) }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
+                        <a href="{{ route('disdik.soal.create', ['subject_id' => $subjectId]) }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                     @else
                         <button type="button" class="btn btn-secondary" disabled><i class="fas fa-plus"></i> Tambah</button>
                     @endif
@@ -35,7 +19,6 @@
                     <thead>
                         <tr>
                             <th>No.</th>
-                            <th>Mata Pelajaran</th>
                             <th>Kategori Soal</th>
                             <th>Tipe Soal</th>
                             <th>Pertanyaan</th>
@@ -71,7 +54,6 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'subject_name', name: 'subject.subject_name' },
                     { data: 'question_category', name: 'question_category' },
                     { data: 'question_type', name: 'question_type' },
                     {

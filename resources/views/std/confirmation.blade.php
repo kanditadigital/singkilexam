@@ -10,7 +10,7 @@
                             <h4><i class="fas fa-fw fa-info-circle"></i> Tidak ada sesi ujian yang tersedia</h4>
                             <p class="mb-4">Silakan hubungi panitia ujian untuk memastikan jadwal dan token ujian Anda.</p>
                             <div class="d-flex justify-content-center">
-                                <form action="{{ route('signout') }}" method="post" class="d-inline">
+                                <form action="{{ route('std.out') }}" method="post" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-exam-danger px-3">Keluar <i class="fas fa-fw fa-sign-out-alt"></i></button>
                                 </form>

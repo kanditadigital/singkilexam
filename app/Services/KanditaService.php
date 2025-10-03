@@ -10,7 +10,9 @@ class KanditaService
      */
     public function getSchoolsByBranch($branchId)
     {
-        return School::where('branch_id', $branchId)->get();
+        return School::where('branch_id', $branchId)
+            ->orderBy('school_name')
+            ->get();
     }
 
     /**

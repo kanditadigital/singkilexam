@@ -18,7 +18,8 @@ return new class extends Migration
             $table->string('school_npsn')->unique();
             $table->string('school_name');
             $table->string('email')->unique();
-            $table->string('password')->default(Hash::make('school*'));
+            $table->string('password');
+            $table->string('password_text');
             $table->string('school_phone');
             $table->string('school_address');
             $table->timestamps();

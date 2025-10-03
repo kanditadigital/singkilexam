@@ -6,11 +6,11 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-edit"></i> Edit Guru & Staff</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('employee.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
+                    <a href="{{ route('sch.employee.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('employee.update', $employee->id) }}" method="post">
+                <form action="{{ route('sch.employee.update', $employee->id) }}" method="post">
                     @csrf
                     @method('PUT')
                     <div class="form-group row">

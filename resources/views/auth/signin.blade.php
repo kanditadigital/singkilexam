@@ -179,7 +179,7 @@
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <h1>Singkil Exam</h1>
+                <h1>Examdita</h1>
                 <p>Selamat datang, silahkan login untuk melanjutkan</p>
             </div>
 
@@ -191,7 +191,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('signin') }}" method="post">
+                <form action="{{ route('login') }}" method="post">
                     @csrf
                     <div class="form-group">
                         <label for="email" class="form-label">

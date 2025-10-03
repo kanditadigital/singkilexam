@@ -68,7 +68,7 @@ class CabdinController extends Controller
             'branch_address'    => $request->branch_address,
         ]);
         toast('Cabang Dinas Pendidikan berhasil ditambahkan', 'success');
-        return redirect()->route('cabdin.index');
+        return redirect()->route('disdik.cabdin.index');
     }
 
     /**
@@ -108,7 +108,7 @@ class CabdinController extends Controller
             'branch_address'    => $request->branch_address,
         ]);
         toast('Cabang Dinas Pendidikan berhasil diubah', 'success');
-        return redirect()->route('cabdin.index');
+        return redirect()->route('disdik.cabdin.index');
     }
 
     /**

@@ -9,15 +9,17 @@
         <li class="dropdown">
             <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
                 <div class="d-sm-none d-lg-inline-block">
-                    @if(Auth::guard('web')->user())
+                    @if(Auth::guard('web')->check())
                         {{ Auth::guard('web')->user()->name }}
-                    @elseif(Auth::guard('schools')->user())
+                    @elseif(Auth::guard('branches')->check())
+                        {{ Auth::guard('branches')->user()->branch_name }}
+                    @elseif(Auth::guard('schools')->check())
                         {{ Auth::guard('schools')->user()->school_name }}
                     @endif
                 </div>
             </a>
             <div class="dropdown-menu dropdown-menu-right">
-                <form action="{{ route('signout') }}" method="post">
+                <form action="{{ route('logout') }}" method="post">
                     @csrf
                     <button type="submit" class="dropdown-item"><i class="fas fa-fw fa-power-off"></i> Keluar</button>
                 </form>

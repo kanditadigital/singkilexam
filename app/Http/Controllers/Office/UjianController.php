@@ -72,7 +72,7 @@ class UjianController extends Controller
         ]);
 
         toast('Ujian berhasil ditambahkan', 'success');
-        return redirect()->route('exam.index');
+        return redirect()->route('disdik.exam.index');
     }
 
     /**
@@ -115,7 +115,7 @@ class UjianController extends Controller
         ]);
 
         toast('Ujian berhasil diubah', 'success');
-        return redirect()->route('exam.index');
+        return redirect()->route('disdik.exam.index');
     }
 
     /**

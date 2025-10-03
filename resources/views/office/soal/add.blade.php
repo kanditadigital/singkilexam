@@ -10,7 +10,7 @@
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('soal.store') }}" method="post" enctype="multipart/form-data" id="question-form">
+                <form action="{{ route('disdik.soal.store') }}" method="post" enctype="multipart/form-data" id="question-form">
                     @csrf
                     <input type="hidden" name="subject_id" id="subject_id" value="{{ old('subject_id', request('subject_id')) }}">
                     <input type="hidden" name="question_format_hidden" id="question_format_hidden" value="{{ old('question_format') }}">
@@ -110,15 +110,15 @@
                                 <label>Pilihan Jawaban <span class="text-danger">*</span></label>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted" id="options-instruction">Tambahkan pilihan jawaban untuk soal</small>
-                                    <button type="button" id="add-option" class="btn btn-sm btn-success">
+                                    <button type="button" id="add-option" class="btn btn-sm btn-primary">
                                         <i class="fas fa-plus"></i> Tambah Pilihan
                                     </button>
                                 </div>
                                 <div id="options-list">
                                     <!-- Options will be dynamically added here -->
                                 </div>
-                                <div class="alert alert-info mt-2" id="correct-answer-info" style="display: none;">
-                                    <small><i class="fas fa-info-circle"></i> <span id="info-text">Pilih salah satu opsi sebagai jawaban yang benar</span></small>
+                                <div class="alert alert-danger mt-2" id="correct-answer-info" style="display: none;">
+                                    <small><i class="fas fa-info-circle"></i> <span id="text-white">Pilih salah satu opsi sebagai jawaban yang benar</span></small>
                                 </div>
                             </div>
                         </div>
@@ -131,7 +131,7 @@
                                 <label>Pernyataan True/False <span class="text-danger">*</span></label>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">Tambah pernyataan. Tentukan mana yang Benar atau Salah.</small>
-                                    <button type="button" id="add-tf" class="btn btn-sm btn-success">
+                                    <button type="button" id="add-tf" class="btn btn-sm btn-primary">
                                         <i class="fas fa-plus"></i> Tambah Pernyataan
                                     </button>
                                 </div>
@@ -174,7 +174,7 @@
                                     <div class="col-md-6">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <label class="mb-0">Kolom Kanan (Matching Options)</label>
-                                            <button type="button" id="add-right-item" class="btn btn-sm btn-success">
+                                            <button type="button" id="add-right-item" class="btn btn-sm btn-primary">
                                                 <i class="fas fa-plus"></i> Tambah Pilihan
                                             </button>
                                         </div>
@@ -183,7 +183,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="alert alert-info mt-2" id="matching-info">
+                                <div class="alert alert-danger mt-2" id="matching-info">
                                     <small><i class="fas fa-info-circle"></i> Setiap item di kolom kiri harus dipasangkan dengan satu pilihan di kolom kanan</small>
                                 </div>
                             </div>
@@ -193,9 +193,6 @@
                     <div class="form-group mt-4">
                         <button type="submit" class="btn btn-primary" id="submit-btn">
                             <i class="fas fa-paper-plane"></i> Simpan Soal
-                        </button>
-                        <button type="button" class="btn btn-secondary ml-2" onclick="resetForm()">
-                            <i class="fas fa-undo"></i> Reset Form
                         </button>
                     </div>
                 </form>

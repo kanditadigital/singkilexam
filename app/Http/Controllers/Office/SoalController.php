@@ -108,7 +108,7 @@ class SoalController extends Controller
         });
 
         toast('Soal berhasil ditambahkan', 'success');
-        return redirect()->route('mapel.show', $request->subject_id);
+        return redirect()->route('disdik.mapel.show', $request->subject_id);
     }
 
 
@@ -190,7 +190,7 @@ class SoalController extends Controller
     }
 
     toast('Soal berhasil diubah', 'success');
-    return redirect()->route('soal.index', ['subject_id' => $request->subject_id ?? $question->subject_id]);
+    return redirect()->route('disdik.soal.index', ['subject_id' => $request->subject_id ?? $question->subject_id]);
 }
 
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\Branch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
 
 class SekolahController extends Controller
@@ -72,12 +73,14 @@ class SekolahController extends Controller
             'school_npsn'       => $request->school_npsn,
             'school_name'       => $request->school_name,
             'email'             => $request->email,
+            'password'          => Hash::make('sekolah*'),
+            'password_text'     => 'sekolah*',
             'school_phone'      => $request->school_phone,
             'school_address'    => $request->school_address,
         ]);
 
         toast('Sekolah berhasil ditambahkan', 'success');
-        return redirect()->route('sekolah.index');
+        return redirect()->route('disdik.sekolah.index');
     }
 
     /**
@@ -124,7 +127,7 @@ class SekolahController extends Controller
         ]);
 
         toast('Sekolah berhasil diubah', 'success');
-        return redirect()->route('sekolah.index');
+        return redirect()->route('disdik.sekolah.index');
     }
 
     /**

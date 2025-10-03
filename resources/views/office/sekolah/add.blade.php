@@ -6,11 +6,11 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-list"></i> Tambah Sekolah</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('sekolah.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
+                    <a href="{{ route('disdik.sekolah.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('sekolah.store') }}" method="post">
+                <form action="{{ route('disdik.sekolah.store') }}" method="post">
                     @csrf
                     <div class="form-group row">
                         <div class="col-md-6">

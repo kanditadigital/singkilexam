@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
+use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,6 +28,7 @@ class AuthController extends Controller
         ]);
     }
 
+
     /**
      * Sign in the user.
      *
@@ -41,7 +44,7 @@ class AuthController extends Controller
 
         if(Auth::attempt($credentials)){
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/disdik/home');
         }else{
             toast('Anda gagal login', 'error');
             return redirect()->back();
@@ -49,37 +52,41 @@ class AuthController extends Controller
     }
 
     /**
-     * Auth School
+     * Site Login
+     * Sekolah
+     * Cabdin
      */
-    public function schoolAuth(Request $request)
+    public function myAuth(Request $request)
     {
-        // validasi input + captcha
-        $credentials = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-            'captcha'  => 'required|captcha'
-        ], [
-            'captcha.captcha' => 'Kode keamanan salah, coba lagi.'
+        $request->validate([
+            'email'     => 'required|email',
+            'password'  => 'required',
+            'captcha'   => 'required|captcha'
+        ],[
+            'captcha.captcha'   => 'Kode keamanan salah, coba lagi.'
         ]);
 
-        // proses login via guard schools
-        if (Auth::guard('schools')->attempt(
+        // Login Cabdin
+        if (Auth::guard('branches')->attempt(
             $request->only('email', 'password'),
-            $request->boolean('remember')
         )) {
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+            return redirect()->intended(route('cabdin.dashboard'));
         }
 
-        // kalau gagal login
-        return back()
-            ->withErrors([
-                'email' => 'Email atau password salah.',
-            ])
-            ->onlyInput('email')
-            ->with('toast', ['type' => 'error', 'message' => 'Anda gagal login']);
-    }
+        // Login Sekolah
+        if (Auth::guard('schools')->attempt(
+            array_merge($request->only('email', 'password'), ['is_active' => 1]),
+        )) {
+            $request->session()->regenerate();
+            return redirect()->intended('/sch/dashboard');
+        }
 
+        // Jika gagal
+        return back()->withErrors([
+            'email' => 'Email atau password salah, atau akun belum aktif.',
+        ]);
+    }
 
     public function signParticipate(Request $request)
     {
@@ -90,12 +97,12 @@ class AuthController extends Controller
 
         if (Auth::guard('students')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('std/confirmation');
+            return redirect()->intended('/std/confirmation');
         }
 
         if (Auth::guard('employees')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('std/confirmation');
+            return redirect()->intended('/std/confirmation');
         }
 
         toast('Anda gagal login', 'error');
@@ -110,13 +117,20 @@ class AuthController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function signOut(Request $request)
+    public function logout(Request $request)
     {
+        if (Auth::guard('branches')->check()) {
+            Auth::guard('branches')->logout();
+        } elseif (Auth::guard('schools')->check()) {
+            Auth::guard('schools')->logout();
+        }
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        toast('Anda berhasil logout', 'success');
-        return redirect('/');
+
+        return redirect('/')->with('status', 'Anda berhasil logout.');
     }
+
 
     public function stdOut(Request $request)
     {

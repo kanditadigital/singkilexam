@@ -39,7 +39,8 @@ class DatabaseSeeder extends Seeder
             'school_npsn' => '1234567890',
             'school_name' => 'Sekolah Singkil',
             'email' => 'sekolah@gmail.com',
-            'password' => Hash::make('sekolah123'),
+            'password' => Hash::make('sekolah*'),
+            'password_text' => 'sekolah*',
             'school_phone' => '081234567890',
             'school_address' => 'Jl. Raya Singkil',
         ]);

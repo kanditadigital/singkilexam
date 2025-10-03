@@ -13,15 +13,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class School extends Authenticatable
 {
     use HasFactory, Notifiable;
-    
+
     protected $fillable = [
         'branch_id',
         'school_npsn',
         'school_name',
         'email',
         'password',
+        'password_text',
         'school_phone',
         'school_address',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function branch()

@@ -106,9 +106,9 @@
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/locale/id.min.js"></script>
 <script>
     const routes = {
-        schoolsByBranch: @json(route('pegawai.getByBranch', ['branchId' => '__BRANCH__'])),
-        liveData: @json(route('live-score.data')),
-        togglePublic: @json(route('live-score.toggle')),
+        schoolsByBranch: @json(route('disdik.pegawai.getByBranch', ['branchId' => '__BRANCH__'])),
+        liveData: @json(route('disdik.live-score.data')),
+        togglePublic: @json(route('disdik.live-score.toggle')),
     };
 
     $.ajaxSetup({
@@ -331,7 +331,7 @@
 
         fetchLiveScore();
         startPolling();
-        updatePublicStatus($publicToggle.is(':checked')); 
+        updatePublicStatus($publicToggle.is(':checked'));
 
         $(window).on('beforeunload', stopPolling);
     });

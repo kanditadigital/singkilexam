@@ -6,7 +6,7 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-th-list"></i> Data Cabdin</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('cabdin.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
+                    <a href="{{ route('disdik.cabdin.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                 </div>
             </div>
             <div class="card-body table-responsive">
@@ -33,7 +33,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: `{{ route('cabdin.index') }}`,
+                url: `{{ route('disdik.cabdin.index') }}`,
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -45,22 +45,7 @@
                 { data: 'branch_phone', name: 'branch_phone' },
                 { data: 'branch_address', name: 'branch_address' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
-            ],
-            language: {
-                processing: "Memuat data...",
-                lengthMenu: "Tampilkan _MENU_ data per halaman",
-                zeroRecords: "Data tidak ditemukan",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-                infoFiltered: "(difilter dari _MAX_ total data)",
-                search: "Cari:",
-                paginate: {
-                    first: "Pertama",
-                    last: "Terakhir",
-                    next: "Selanjutnya",
-                    previous: "Sebelumnya"
-                }
-            }
+            ]
         });
 
         $('#datayajra').on('click', '.edit', function() {

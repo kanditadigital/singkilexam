@@ -6,7 +6,7 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-th-list"></i> Data Ujian</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('exam.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
+                    <a href="{{ route('disdik.exam.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                 </div>
             </div>
             <div class="card-body table-responsive">
@@ -34,7 +34,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: `{{ route('exam.index') }}`,
+                url: `{{ route('disdik.exam.index') }}`,
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -45,8 +45,8 @@
                 { data: 'exam_type', name: 'exam_type' },
                 { data: 'exam_name', name: 'exam_name' },
                 { data: 'exam_code', name: 'exam_code' },
-                { 
-                    data: 'exam_status', 
+                {
+                    data: 'exam_status',
                     name: 'exam_status',
                     render: function(data, type, row) {
                         if (data === 'Active') {

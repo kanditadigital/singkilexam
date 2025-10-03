@@ -113,11 +113,11 @@
 
 @push('scripts')
 <script>
-    const destroyTemplate = @json(route('exam-participants.destroy', ['participant' => ':id']));
+    const destroyTemplate = @json(route('sch.exam-participants.destroy', ['participant' => ':id']));
     const routes = {
-        students: @json(route('exam-participants.students')),
-        registered: @json(route('exam-participants.registered')),
-        store: @json(route('exam-participants.store')),
+        students: @json(route('sch.exam-participants.students')),
+        registered: @json(route('sch.exam-participants.registered')),
+        store: @json(route('sch.exam-participants.store')),
         destroy: (id) => destroyTemplate.replace(':id', id)
     };
 

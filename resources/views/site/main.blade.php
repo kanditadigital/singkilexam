@@ -13,9 +13,18 @@
     @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
 <body>
-    
+
 
     @include('site.navbar')
+    {{-- Notifikasi (alert sederhana) --}}
+    @if(session('toast'))
+        <div class="max-w-lg mx-auto mt-4">
+            <div class="px-4 py-3 rounded
+                        {{ session('toast.type') === 'success' ? 'bg-success text-white' : 'bg-danger text-white' }}">
+                {{ session('toast.message') }}
+            </div>
+        </div>
+    @endif
     @yield('content')
 
     <script src="{{ asset('vendor/stislaravel/js/jquery-3.7.1.min.js') }}"></script>

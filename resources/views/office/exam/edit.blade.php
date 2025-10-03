@@ -6,11 +6,11 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-list"></i> Edit Ujian</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('exam.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
+                    <a href="{{ route('disdik.exam.index') }}" class="btn btn-reka"><i class="fas fa-arrow-left"></i> Kembali</a>
                 </div>
             </div>
             <div class="card-body mb-0">
-                <form action="{{ route('exam.update', $exam->id) }}" method="post">
+                <form action="{{ route('disdik.exam.update', $exam->id) }}" method="post">
                     @csrf
                     @method('PUT')
                     <div class="form-group row">

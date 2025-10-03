@@ -88,9 +88,9 @@ class SesiController extends Controller
             'show_score'        => $request->show_score,
             'session_status'    => $request->session_status,
         ]);
-        
+
         toast('Sesi Ujian berhasil ditambahkan', 'success');
-        return redirect()->route('sesi-ujian.index');
+        return redirect()->route('disidk.sesi-ujian.index');
     }
 
     /**
@@ -148,7 +148,7 @@ class SesiController extends Controller
         ]);
 
         toast('Sesi Ujian berhasil diubah', 'success');
-        return redirect()->route('sesi-ujian.index');
+        return redirect()->route('disdik.sesi-ujian.index');
     }
 
     /**

@@ -11,7 +11,7 @@
                             <div class="my-4 text-center">
                                 <h5>Member Area</h5>
                             </div>
-                            <form action="{{ route('login.sch') }}" method="POST">
+                            <form action="{{ route('ayo.login') }}" method="POST">
                                 @csrf
                                 <div class="input-group flex-nowrap mb-3">
                                     <span class="input-group-text" id="basic-addon1"><i class="fa-solid fa-envelope"></i></span>
@@ -33,12 +33,16 @@
                                     <span class="input-group-text" id="basic-addon1"><i class="fa-solid fa-barcode"></i></span>
                                     <input type="text" class="form-control" name="captcha" placeholder="Kode Keamanan" required>
                                 </div>
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="remember">Ingat saya</label>
+                                </div>
                                 <div class="mb-3">
                                     <button type="submit" class="btn btn-cat w-100">Login</button>
                                 </div>
-                            </form>
-                        </div>
+                        </form>
                     </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -275,5 +279,5 @@
         @endif
     });
     </script>
-    
+
 @endpush

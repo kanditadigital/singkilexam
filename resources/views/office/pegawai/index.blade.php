@@ -6,7 +6,7 @@
             <div class="card-header bg-primary text-white py-1">
                 <h4><i class="fas fa-fw fa-th-list"></i> Data Pegawai</h4>
                 <div class="ml-auto">
-                    <a href="{{ route('pegawai.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
+                    <a href="{{ route('disdik.pegawai.create') }}" class="btn btn-reka"><i class="fas fa-plus"></i> Tambah</a>
                 </div>
             </div>
             <div class="card-body table-responsive">
@@ -35,7 +35,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: `{{ route('pegawai.index') }}`,
+                url: `{{ route('disdik.pegawai.index') }}`,
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

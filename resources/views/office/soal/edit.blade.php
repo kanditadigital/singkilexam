@@ -12,7 +12,7 @@
             {{-- Container untuk notifikasi --}}
             <div id="alert-container"></div>
             <div class="card-body mb-0">
-                <form action="{{ route('soal.update', $soal->id) }}" method="post" enctype="multipart/form-data" id="question-form" novalidate>
+                <form action="{{ route('disdik.soal.update', $soal->id) }}" method="post" enctype="multipart/form-data" id="question-form" novalidate>
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="subject_id" value="{{ $soal->subject_id }}">
@@ -119,7 +119,7 @@
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="mb-0">Pilihan Jawaban <span class="text-danger">*</span></label>
-                            <button type="button" id="add-option-btn" class="btn btn-sm btn-success">
+                            <button type="button" id="add-option-btn" class="btn btn-sm btn-primary">
                                 <i class="fas fa-plus"></i> Tambah Pilihan
                             </button>
                         </div>
@@ -177,7 +177,7 @@
                             <div class="col-md-6">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <label class="mb-0">Kolom Kanan (Matching Options)</label>
-                                    <button type="button" id="add-right-item-btn" class="btn btn-sm btn-success">
+                                    <button type="button" id="add-right-item-btn" class="btn btn-sm btn-primary">
                                         <i class="fas fa-plus"></i> Tambah Pilihan
                                     </button>
                                 </div>
