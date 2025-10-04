@@ -159,11 +159,8 @@ class SoalController extends Controller
         $questionImagePath = $request->file('question_image')->store('questions', 'public');
     }
 
-    $slug = $request->question_text
-        ? Str::slug($request->question_text)
-        : Str::slug($request->question_category . '-' . time());
 
-    DB::transaction(function () use ($request, $question, $questionImagePath, $slug) {
+    DB::transaction(function () use ($request, $question, $questionImagePath) {
         $question->update([
             'subject_id' => $request->subject_id ?? $question->subject_id,
             'question_text' => $request->question_text,
@@ -172,7 +169,6 @@ class SoalController extends Controller
             'question_format' => $request->question_format,
             'option_format' => $request->option_format ?? 'text',
             'question_image' => $questionImagePath,
-            'slug' => $slug,
         ]);
 
         $existingOptions = $question->questionOptions()->get();
