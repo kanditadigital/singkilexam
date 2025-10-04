@@ -124,6 +124,26 @@
                         </div>
                     </div>
 
+                    <!-- True/False Labels Container -->
+                    <div id="truefalse-labels-container" style="display:none;">
+                        <div class="form-group row">
+                            <div class="col-md-6">
+                                <label for="true_label">Label untuk Benar <span class="text-danger">*</span></label>
+                                <input type="text" name="true_label" id="true_label" class="form-control @error('true_label') is-invalid @enderror" value="{{ old('true_label', 'Benar') }}" required>
+                                @error('true_label')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label for="false_label">Label untuk Salah <span class="text-danger">*</span></label>
+                                <input type="text" name="false_label" id="false_label" class="form-control @error('false_label') is-invalid @enderror" value="{{ old('false_label', 'Salah') }}" required>
+                                @error('false_label')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- True/False Grid Container (Statements) -->
                     <div id="truefalse-container" style="display:none;">
                         <div class="form-group row">
@@ -140,8 +160,8 @@
                                         <thead class="thead-light">
                                             <tr>
                                                 <th style="width:60%">Pernyataan</th>
-                                                <th class="text-center" style="width:15%">Benar</th>
-                                                <th class="text-center" style="width:15%">Salah</th>
+                                                <th class="text-center" style="width:15%" id="true-header">Benar</th>
+                                                <th class="text-center" style="width:15%" id="false-header">Salah</th>
                                                 <th class="text-center" style="width:10%">Aksi</th>
                                             </tr>
                                         </thead>
@@ -450,6 +470,7 @@
             const correctInfo = $('#correct-answer-info');
 
             optionsContainer.hide();
+            $('#truefalse-labels-container').hide();
             $('#truefalse-container').hide();
             $('#matching-container').hide();
             correctInfo.hide();
@@ -464,7 +485,9 @@
             }
 
             if (questionType === 'true_false') {
+                $('#truefalse-labels-container').show();
                 $('#truefalse-container').show();
+                updateTrueFalseHeaders();
                 if ($('#tf-list .tf-row').length === 0) {
                     addTFRow();
                     addTFRow();
@@ -985,6 +1008,19 @@
             $('html, body').animate({ scrollTop: 0 }, 300);
         }
 
+        // Update True/False headers
+        function updateTrueFalseHeaders() {
+            const trueLabel = $('#true_label').val() || 'Benar';
+            const falseLabel = $('#false_label').val() || 'Salah';
+            $('#true-header').text(trueLabel);
+            $('#false-header').text(falseLabel);
+        }
+
+        // Handle label changes
+        $('#true_label, #false_label').on('input', function() {
+            updateTrueFalseHeaders();
+        });
+
         // Global function for reset button
         window.resetForm = function() {
             if (confirm('Apakah Anda yakin ingin mereset form? Semua data yang telah diisi akan hilang.')) {
@@ -997,6 +1033,8 @@
                 $('#right-items-list').empty();
                 $('#options-container').hide();
                 $('#matching-container').hide();
+                $('#truefalse-labels-container').hide();
+                $('#truefalse-container').hide();
                 $('#question-text-container').show();
                 $('#question-image-container').hide();
                 $('#image-preview').hide();

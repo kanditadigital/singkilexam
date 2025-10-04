@@ -98,6 +98,8 @@ class SoalController extends Controller
                 'option_format' => $request->option_format ?? 'text',
                 'question_image' => $questionImagePath,
                 'slug' => Str::random(20),
+                'true_label' => $request->true_label ?? 'Benar',
+                'false_label' => $request->false_label ?? 'Salah',
             ]);
 
             $this->syncQuestionOptions($question, $request);
@@ -169,6 +171,8 @@ class SoalController extends Controller
             'question_format' => $request->question_format,
             'option_format' => $request->option_format ?? 'text',
             'question_image' => $questionImagePath,
+            'true_label' => $request->true_label ?? $question->true_label,
+            'false_label' => $request->false_label ?? $question->false_label,
         ]);
 
         $existingOptions = $question->questionOptions()->get();
@@ -207,6 +211,8 @@ class SoalController extends Controller
         }
 
         if ($request->question_type === 'true_false') {
+            $rules['true_label'] = 'required|string|max:255';
+            $rules['false_label'] = 'required|string|max:255';
             $rules['tf_statements'] = 'array';
             $rules['tf_statements.*'] = 'nullable|string';
             $rules['tf_statement_images'] = 'nullable|array';

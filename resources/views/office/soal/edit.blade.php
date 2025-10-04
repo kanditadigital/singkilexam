@@ -75,6 +75,26 @@
                         </div>
                     </div>
 
+                    <!-- True/False Labels Container -->
+                    <div id="truefalse-labels-container" style="display:none;">
+                        <div class="form-group row">
+                            <div class="col-md-6">
+                                <label for="true_label">Label untuk Benar <span class="text-danger">*</span></label>
+                                <input type="text" name="true_label" id="true_label" class="form-control @error('true_label') is-invalid @enderror" value="{{ old('true_label', $soal->true_label ?? 'Benar') }}" required>
+                                @error('true_label')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label for="false_label">Label untuk Salah <span class="text-danger">*</span></label>
+                                <input type="text" name="false_label" id="false_label" class="form-control @error('false_label') is-invalid @enderror" value="{{ old('false_label', $soal->false_label ?? 'Salah') }}" required>
+                                @error('false_label')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group" id="question-text-container" style="display: none;">
                         <label for="question_text">Teks Pertanyaan <span class="text-danger" id="text-required">*</span></label>
                         <textarea name="question_text" id="texteditor" class="@error('question_text') is-invalid @enderror">{{ old('question_text', $soal->question_text) }}</textarea>
@@ -145,8 +165,8 @@
                                 <thead class="thead-light">
                                     <tr>
                                         <th>Pernyataan</th>
-                                        <th class="text-center" style="width: 120px;">Benar</th>
-                                        <th class="text-center" style="width: 120px;">Salah</th>
+                                        <th class="text-center" style="width: 120px;" id="true-header">Benar</th>
+                                        <th class="text-center" style="width: 120px;" id="false-header">Salah</th>
                                         <th class="text-center" style="width: 80px;">Aksi</th>
                                     </tr>
                                 </thead>
@@ -269,6 +289,7 @@
         const infoText = document.getElementById('info-text');
         const correctAnswerInfo = document.getElementById('correct-answer-info');
         const trueFalseContainer = document.getElementById('truefalse-container');
+        const trueFalseLabelsContainer = document.getElementById('truefalse-labels-container');
         const tfList = document.getElementById('tf-list');
         const addTfRowBtn = document.getElementById('add-tf-row-btn');
         const matchingContainer = document.getElementById('matching-container');
@@ -311,6 +332,7 @@
             // Reset containers
             optionsContainer.style.display = 'none';
             correctAnswerInfo.style.display = 'none';
+            trueFalseLabelsContainer.style.display = 'none';
             trueFalseContainer.style.display = 'none';
             matchingContainer.style.display = 'none';
 
@@ -325,7 +347,9 @@
             }
 
             if (useTrueFalseGrid) {
+                trueFalseLabelsContainer.style.display = 'block';
                 trueFalseContainer.style.display = 'block';
+                updateTrueFalseHeaders();
                 if (tfList.children.length === 0) {
                     loadTrueFalseGrid();
                 }
@@ -1032,6 +1056,20 @@
                 select.removeAttribute('data-match-index');
             });
         };
+
+        // --- Update True/False Headers ---
+        const updateTrueFalseHeaders = () => {
+            const trueLabel = document.getElementById('true_label').value || 'Benar';
+            const falseLabel = document.getElementById('false_label').value || 'Salah';
+            const trueHeader = document.getElementById('true-header');
+            const falseHeader = document.getElementById('false-header');
+            if (trueHeader) trueHeader.textContent = trueLabel;
+            if (falseHeader) falseHeader.textContent = falseLabel;
+        };
+
+        // Event listeners for label inputs
+        document.getElementById('true_label').addEventListener('input', updateTrueFalseHeaders);
+        document.getElementById('false_label').addEventListener('input', updateTrueFalseHeaders);
 
         // --- Initial Execution ---
         updateQuestionFormatDisplay();

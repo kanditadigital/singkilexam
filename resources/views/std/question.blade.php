@@ -141,8 +141,8 @@
                                 <thead class="thead-light">
                                     <tr>
                                         <th>Pernyataan</th>
-                                        <th class="text-center">Benar</th>
-                                        <th class="text-center">Salah</th>
+                                        <th class="text-center">{{ $question->true_label ?? 'Benar' }}</th>
+                                        <th class="text-center">{{ $question->false_label ?? 'Salah' }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -167,13 +167,11 @@
                                             <td class="text-center align-middle">
                                                 <label class="tf-option">
                                                     <input type="radio" name="tf[{{ $opt->id }}]" value="true" {{ $selected === 'true' || $selected === true ? 'checked' : '' }}>
-                                                    <span>Benar</span>
                                                 </label>
                                             </td>
                                             <td class="text-center align-middle">
                                                 <label class="tf-option">
                                                     <input type="radio" name="tf[{{ $opt->id }}]" value="false" {{ $selected === 'false' || $selected === false ? 'checked' : '' }}>
-                                                    <span>Salah</span>
                                                 </label>
                                             </td>
                                         </tr>

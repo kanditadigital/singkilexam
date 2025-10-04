@@ -19,6 +19,8 @@ class Question extends Model
         'question_text',
         'question_image',
         'slug',
+        'true_label',
+        'false_label',
     ];
 
     public function exam()
