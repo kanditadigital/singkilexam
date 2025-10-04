@@ -48,7 +48,7 @@
     </div>
 @endsection
 @push('scripts')
-    <script src="https://cdn.tiny.cloud/1/lgwbcigxg5kj9r7fpvlp83nmg38onp3bntizwoibu78t09r5/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/9xs1wwpbsgxm69hod0co0bhs7u8rfrqrozq4cfki9kkp7c1b/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
         tinymce.init({
             selector: '#texteditor',
