@@ -90,7 +90,7 @@ class SesiController extends Controller
         ]);
 
         toast('Sesi Ujian berhasil ditambahkan', 'success');
-        return redirect()->route('disidk.sesi-ujian.index');
+        return redirect()->route('disdik.sesi-ujian.index');
     }
 
     /**
