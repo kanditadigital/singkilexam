@@ -326,6 +326,7 @@
             });
         });
 
+
         $saveButton.on('click', function () {
             const examId = currentExamId();
             const ids = selectedParticipantIds();

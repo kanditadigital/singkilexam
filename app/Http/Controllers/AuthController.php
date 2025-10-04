@@ -17,14 +17,14 @@ class AuthController extends Controller
     public function formSignIn()
     {
         return view('auth.signin',[
-            'title'     => 'Selamat Datang di Singkil Exam'
+            'title'     => 'Selamat Datang di Examdita'
         ]);
     }
 
     public function formSignParticipate()
     {
         return view('auth.login',[
-            'title'     => 'Selamat Datang di Singkil Exam'
+            'title'     => 'Selamat Datang di Examdita'
         ]);
     }
 

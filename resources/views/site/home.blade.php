@@ -56,7 +56,7 @@
             </div>
             <div class="row mb-4">
                 <div class="col-md-3">
-                    <div class="card text-center">
+                    <div class="card text-center shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title">Cabang Dinas</h5>
                             <h3 class="text-primary">{{ $cabdinCount }}</h3>
@@ -64,7 +64,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center">
+                    <div class="card text-center shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title">Sekolah</h5>
                             <h3 class="text-success">{{ $schoolCount }}</h3>
@@ -72,7 +72,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center">
+                    <div class="card text-center shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title">Guru</h5>
                             <h3 class="text-warning">{{ $teacherCount }}</h3>
@@ -80,7 +80,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center">
+                    <div class="card text-center shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title">Siswa</h5>
                             <h3 class="text-danger">{{ $studentCount }}</h3>
@@ -90,8 +90,8 @@
             </div>
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white pt-3">
                             <h5>Grafik Statistik</h5>
                         </div>
                         <div class="card-body">
@@ -102,8 +102,8 @@
             </div>
             <div class="row">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white pt-3">
                             <h5>Data Statistik Hierarki</h5>
                         </div>
                         <div class="card-body">
@@ -160,26 +160,32 @@
                     label: 'Jumlah',
                     data: [{{ $cabdinCount }}, {{ $schoolCount }}, {{ $teacherCount }}, {{ $studentCount }}],
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 205, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)'
+                        '#2ecc71',
+                        '#3498db',
+                        '#f1c40f',
+                        '#e67e22'
                     ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 205, 86, 1)',
-                        'rgba(75, 192, 192, 1)'
-                    ],
-                    borderWidth: 1
+                    borderWidth: 0,
+                    hoverOffset: 10
                 }]
             },
             options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label(context) {
+                                const value = context.raw || 0;
+                                return `${context.label}: ${value.toLocaleString()}`;
+                            }
+                        }
                     }
-                }
+                },
+                cutout: '65%'
             }
         });
 

@@ -5,11 +5,14 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card shadow-sm finish-card">
-                    <div class="card-body p-5 text-center">
-                        <h3 class="mb-3">Ujian Selesai</h3>
-                        <p class="text-muted mb-2">Terima kasih telah menyelesaikan ujian: <strong>{{ $exam->exam_name }}</strong>.</p>
+                    <div class="card-body p-5">
+                        <div class="text-center">
+                            <h3 class="mb-3">Ujian Selesai</h3>
+                            <p class="text-muted mb-2">Terima kasih telah berpartisipasi dalam ujian ini</p>
+                        </div>
+                        <hr>
                         @if(optional($attempt->session->subject)->subject_name)
-                            <p class="mb-3">Mata Ujian: <strong>{{ $attempt->session->subject->subject_name }}</strong></p>
+                            <h4>{{ $attempt->session->subject->subject_name }}</h4>
                         @endif
                         @if($grade)
                             @php
@@ -17,15 +20,20 @@
                                 $answered = (int) ($grade->answered_questions ?? 0);
                                 $wrong = max(0, $answered - $correct);
                             @endphp
-                            <p class="lead mb-1">Nilai Anda: <strong>{{ number_format($grade->score, 2) }}</strong></p>
-                            <p class="text-muted mb-2">Soal terjawab: {{ $answered }}/{{ $grade->total_questions }}</p>
-                            <p class="mb-0">Jawaban benar: <strong>{{ $correct }}</strong></p>
-                            <p class="mb-3">Jawaban salah: <strong>{{ $wrong }}</strong></p>
+                            <table class="table-borderless table-sm">
+                                <tr><th>Nilai</th><td>:</td><td><span class="badge bg-success text-white" style="font-size: 1.6rem;">{{ number_format($grade->score, 2) }}</span></td></tr>
+                                <tr><th>Soal Terjawab</th><td>:</td><td><span class="badge bg-warning text-dark">{{ $answered }}/{{ $grade->total_questions }}</span></td></tr>
+                                <tr><th>Jawaban Benar</th><td>:</td><td><span class="badge bg-success text-white"><i class="fas fa-fw fa-check"></i> {{ $correct }}</span></td></tr>
+                                <tr><th>Jawaban Salah</th><td>:</td><td><span class="badge bg-danger text-white"><i class="fas fa-fw fa-times"></i> {{ $wrong }}</span></td></tr>
+                            </table>
                         @endif
-                        <form action="{{ route('std.out') }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn btn-exam-danger mt-3 px-4">Keluar <i class="fas fa-fw fa-sign-out-alt"></i></button>
-                        </form>
+                        <hr>
+                        <div class="text-center">
+                            <form action="{{ route('std.out') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-exam-danger mt-3 px-4">Keluar <i class="fas fa-fw fa-sign-out-alt"></i></button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

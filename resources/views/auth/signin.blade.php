@@ -1,127 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>{{ $title }}</title>
+    <title>{{ $title ?? 'Login' }}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-    {{-- Style --}}
-    <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/all.min.css') }}">
+    {{-- Bootstrap & Fontawesome --}}
+    <link rel="stylesheet" href="{{ asset('vendor/stislaravel/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/stislaravel/css/all.min.css') }}">
+    <link rel="shortcut icon" href="{{ asset('storage/kandita.webp') }}" type="image/x-icon">
+
     <style>
         body {
-            background: linear-gradient(135deg, #113F67 0%, #0d2f4f 100%);
-            min-height: 100vh;
+            margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .login-container {
+            background: linear-gradient(135deg, #0a2342, #19376d, #0f4c75);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
         }
 
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-            max-width: 450px;
+        .login-wrapper {
+            display: flex;
             width: 100%;
+            max-width: 1000px;
+            min-height: 600px;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        .login-header {
-            background: linear-gradient(135deg, #113F67 0%, #0d2f4f 100%);
+        .login-left {
+            flex: 1;
+            background: url('/storage/login.webp') no-repeat center center;
+            background-size: cover;
             color: white;
-            padding: 40px 30px 30px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
             position: relative;
         }
 
-        .login-header::before {
-            content: '';
+        .login-left::after {
+            content: "";
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
-        }
-
-        .login-header h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            margin: 0;
-            position: relative;
+            width: 100%;
+            height: 100%;
             z-index: 1;
         }
 
-        .login-header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
-            font-size: 1rem;
+        .login-left > * {
             position: relative;
-            z-index: 1;
+            z-index: 2; /* agar konten tampil di atas overlay */
         }
 
-        .login-body {
-            padding: 40px 30px;
+
+        .login-left img {
+            max-width: 90%;
+            height: auto;
+        }
+
+        .login-right {
+            flex: 1;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-right .icon-user {
+            margin-bottom: 0px;
+        }
+
+        .login-right h2 {
+            font-weight: 700;
+            color: #19376d;
+            margin-bottom: 10px;
+        }
+
+        .login-right p {
+            color: #666;
+            margin-bottom: 30px;
         }
 
         .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
+            margin-bottom: 20px;
         }
 
         .form-control {
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            padding: 15px 20px;
-            font-size: 1rem;
+            border-radius: 10px;
+            padding: 14px 18px 14px 45px;
+            border: 1px solid #ccc;
             transition: all 0.3s ease;
-            background: #f8f9fa;
         }
 
         .form-control:focus {
-            border-color: #113F67;
-            box-shadow: 0 0 0 0.2rem rgba(17, 63, 103, 0.25);
-            background: white;
-        }
-
-        .btn-login {
-            background: linear-gradient(135deg, #113F67 0%, #0d2f4f 100%);
-            border: none;
-            border-radius: 12px;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: white;
-            width: 100%;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(17, 63, 103, 0.3);
-            color: white;
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
+            border-color: #19376d;
+            box-shadow: 0 0 0 3px rgba(25,55,109,0.2);
         }
 
         .input-icon {
@@ -130,112 +110,119 @@
 
         .input-icon i {
             position: absolute;
-            left: 20px;
             top: 50%;
+            left: 15px;
             transform: translateY(-50%);
-            color: #6c757d;
-            z-index: 2;
+            color: #888;
         }
 
-        .input-icon .form-control {
-            padding-left: 50px;
-        }
-
-        @media (max-width: 576px) {
-            .login-card {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .login-header {
-                padding: 30px 20px 25px;
-            }
-
-            .login-header h1 {
-                font-size: 2rem;
-            }
-
-            .login-body {
-                padding: 30px 20px;
-            }
-        }
-
-        .alert {
-            border-radius: 10px;
+        .btn-login {
+            background: linear-gradient(135deg, #0a2342, #19376d);
             border: none;
-            margin-bottom: 20px;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
         }
 
-        .alert-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        .btn-login:hover {
+            box-shadow: 0 8px 20px rgba(25,55,109,0.3);
+            transform: translateY(-2px);
             color: white;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer a {
+            color: #19376d;
+            text-decoration: none;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .login-wrapper {
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .login-left {
+                display: none;
+            }
+
+            .login-right {
+                padding: 40px 25px;
+            }
         }
     </style>
 </head>
 <body>
-
     @include('sweetalert::alert')
 
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>Examdita</h1>
-                <p>Selamat datang, silahkan login untuk melanjutkan</p>
+    <div class="login-wrapper">
+        {{-- Bagian kiri dengan ilustrasi --}}
+        <div class="login-left">
+
+        </div>
+
+        {{-- Bagian kanan dengan form --}}
+        <div class="login-right">
+            <div class="text-center">
+                <div class="icon-user">
+                    <img src="{{ asset('storage/kandita.webp') }}" class="img-fluid" width="80" alt="Examdita by Kandita">
+                </div>
+                <h2>Selamat Datang</h2>
+                <p>Silakan masuk untuk melanjutkan</p>
             </div>
 
-            <div class="login-body">
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        {{ $errors->first() }}
-                    </div>
-                @endif
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> {{ $errors->first() }}
+                </div>
+            @endif
 
-                <form action="{{ route('login') }}" method="post">
-                    @csrf
-                    <div class="form-group">
-                        <label for="email" class="form-label">
-                            Email
-                        </label>
-                        <div class="input-icon">
-                            <i class="fas fa-envelope"></i>
-                            <input type="email"
-                                   name="email"
-                                   id="email"
-                                   class="form-control @error('email') is-invalid @enderror"
-                                   placeholder="Masukkan email"
-                                   value="{{ old('email') }}"
-                                   required>
-                        </div>
+            <form action="{{ route('login') }}" method="post">
+                @csrf
+                <div class="form-group">
+                    <div class="input-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="email" class="form-control" placeholder="Username / Email" value="{{ old('email') }}" required>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="password" class="form-label">
-                            Kata Sandi
-                        </label>
-                        <div class="input-icon">
-                            <i class="fas fa-lock"></i>
-                            <input type="password"
-                                   name="password"
-                                   id="password"
-                                   class="form-control @error('password') is-invalid @enderror"
-                                   placeholder="Masukkan kata sandi"
-                                   required>
-                        </div>
+                <div class="form-group">
+                    <div class="input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" class="form-control" placeholder="Password" required>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn btn-login">
-                        <i class="fas fa-sign-in-alt me-2"></i>
-                        Login
-                    </button>
-                </form>
-            </div>
+                <div class="form-footer">
+                    <div>
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember" class="ml-1">Ingat saya</label>
+                    </div>
+                    <a href="#">Lupa Password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-login mt-4">LOGIN</button>
+            </form>
         </div>
     </div>
 
     {{-- Script --}}
     <script src="{{ asset('vendor/stislaravel/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('vendor/stislaravel/js/bootstrap.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

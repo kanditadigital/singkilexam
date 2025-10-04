@@ -14,12 +14,21 @@
 <body>
 
     {{-- Navbar --}}
-    <nav class="exam-navbar navbar navbar-dark bg-dark shadow-sm mb-3 px-3">
-        <span class="navbar-brand mb-0 h6">EXAMDITA</span>
-        <div class="ml-auto text-white">
-            <p class="mt-3 mb-0">{{ $participant['name'] }}</p>
+    <nav class="exam-navbar navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-3 px-4">
+        <a class="navbar-brand font-weight-bold text-uppercase tracking-wide" href="#">
+            <i class="fas fa-graduation-cap mr-2 text-warning"></i> EXAMDITA
+        </a>
+
+        <div class="ml-auto d-flex align-items-center">
+            <div class="d-flex align-items-center bg-secondary rounded-pill px-3 py-1 shadow-sm">
+                <i class="far fa-user-circle text-white-50 mr-2"></i>
+                <span class="text-white font-weight-medium">
+                    {{ $participant['name'] }}
+                </span>
+            </div>
         </div>
     </nav>
+
 
     {{-- Content --}}
     <div class="exam-content mb-5">
@@ -32,9 +41,8 @@
                         <div>
                         </div>
                         <div>
-                            <a href="#" class="btn btn-sm btn-info mr-2">Informasi Soal</a>
-                            <span class="btn btn-sm btn-outline-dark mr-2" id="timer">00:00:00</span>
-                            <button data-toggle="modal" data-target="#questionListModal" class="btn btn-sm btn-info">Daftar Soal</button>
+                            <span class="btn btn-sm btn-warning mr-2" style="font-weight: 600; font-size: 1rem;" id="timer">00:00:00</span>
+                            <button data-toggle="modal" data-target="#questionListModal" class="btn btn-sm btn-info" style="font-size: 1rem;"><i class="fas fa-fw fa-list"></i> Daftar Soal</button>
                         </div>
                     </div>
 

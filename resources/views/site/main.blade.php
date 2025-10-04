@@ -19,18 +19,20 @@
     <meta property="og:title" content="{{ $title }} &mdash; Kandita Digital Integrasi">
     <meta property="og:description" content="Kandita Digital Integrasi membantu bisnis Anda dengan layanan digital marketing, website, SEO, dan integrasi sistem.">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="{{ asset('images/seo-default.jpg') }}">
+    <meta property="og:image" content="{{ asset('storage/kandita.webp') }}">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $title }} &mdash; Kandita Digital Integrasi">
     <meta name="twitter:description" content="Kandita Digital Integrasi - Solusi digital marketing, website, SEO, dan integrasi sistem.">
-    <meta name="twitter:image" content="{{ asset('images/seo-default.jpg') }}">
+    <meta name="twitter:image" content="{{ asset('storage/kandita.webp') }}">
 
     <!-- Preconnect fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="shortcut icon" href="{{ asset('storage/kandita.webp') }}" type="image/x-icon">
 
     <!-- Styles -->
     @vite(['resources/css/app.css','resources/js/app.js'])

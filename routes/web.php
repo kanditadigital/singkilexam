@@ -173,6 +173,7 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
 Route::prefix('std')->name('std.')->middleware('auth.participant')->group(function () {
     Route::get('confirmation', [ExamController::class, 'index'])->name('confirmation');
     Route::post('checktoken', [ExamController::class, 'checkToken'])->name('checktoken');
+    Route::delete('reset-attempt/{attemptId}', [ExamController::class, 'resetAttempt'])->name('reset_attempt');
 
     Route::get('exam/{token}', [ExamController::class, 'showExam'])->name('exam');
     Route::post('exam/{token}/answer', [ExamController::class, 'saveAnswer'])->name('answer');

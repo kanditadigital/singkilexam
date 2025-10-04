@@ -12,7 +12,9 @@
                             <div class="d-flex justify-content-center">
                                 <form action="{{ route('std.out') }}" method="post" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-exam-danger px-3">Keluar <i class="fas fa-fw fa-sign-out-alt"></i></button>
+                                    <button type="submit" class="btn btn-exam-danger px-3">
+                                        Keluar <i class="fas fa-fw fa-sign-out-alt"></i>
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -20,6 +22,7 @@
                 </div>
             </div>
         @else
+            {{-- Daftar sesi --}}
             <div class="row justify-content-center">
                 <div class="col-md-7">
                     <div class="card h-100">
@@ -44,7 +47,9 @@
                                                 {{ optional($sessionItem->session_end_time)->format('H:i') ?? '-' }}
                                             </span>
                                             <span class="mr-3"><i class="fas fa-hourglass-half"></i> Durasi {{ $sessionItem->session_duration }} menit</span>
-                                            <span class="badge {{ $sessionItem->session_status === 'Active' ? 'badge-success' : 'badge-secondary' }}">{{ $sessionItem->session_status }}</span>
+                                            <span class="badge {{ $sessionItem->session_status === 'Active' ? 'badge-success' : 'badge-secondary' }}">
+                                                {{ $sessionItem->session_status }}
+                                            </span>
                                         </div>
                                     </div>
                                 @endforeach
@@ -52,6 +57,8 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Form peserta --}}
                 <div class="col-md-5">
                     <div class="card">
                         <div class="card-body p-4">
@@ -86,14 +93,17 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Konfirmasi Nama Peserta</label>
-                                    <input type="text" class="form-control @error('confirm_participant_name') is-invalid @enderror" name="confirm_participant_name" placeholder="Ketik ulang nama peserta" value="{{ old('confirm_participant_name') }}">
+                                    <input type="text" class="form-control @error('confirm_participant_name') is-invalid @enderror"
+                                           name="confirm_participant_name" placeholder="Ketik ulang nama peserta"
+                                           value="{{ old('confirm_participant_name') }}">
                                     @error('confirm_participant_name')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>
                                 <div class="form-group">
                                     <label>Token</label>
-                                    <input type="text" class="form-control @error('exam_token') is-invalid @enderror" name="exam_token" placeholder="TOKEN" value="{{ old('exam_token') }}" required>
+                                    <input type="text" class="form-control @error('exam_token') is-invalid @enderror"
+                                           name="exam_token" placeholder="TOKEN" value="{{ old('exam_token') }}" required>
                                     @error('exam_token')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
@@ -108,4 +118,42 @@
             </div>
         @endif
     </div>
+
+    {{-- Modal Reset Attempt tampil otomatis jika in_progress --}}
+    @if($ongoingAttempt && ($ongoingAttempt->status === 'in_progress' || $ongoingAttempt->status !== 'submitted'))
+    <div class="modal fade" id="resetAttemptModal" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="resetAttemptLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="resetAttemptLabel"><i class="fas fa-fw fa-list-alt"></i> Ujian Sedang Berlangsung</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Anda memiliki ujian yang sedang berlangsung.</p>
+                    <table class="borderless table-sm">
+                        <tr><th>Mata Pelajaran</th><td>:</td><td>{{ $ongoingAttempt->session->subject->subject_name ?? '-' }}</td></tr>
+                    </table>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <a href="{{ route('std.exam', ['token' => $ongoingAttempt->exam->exam_code, 'session' => $ongoingAttempt->exam_session_id]) }}"
+                       class="btn btn-sm btn-warning"><i class="fas fa-fw fa-sync"></i> Lanjutkan Ujian</a>
+
+                    <form action="{{ route('std.reset_attempt', $ongoingAttempt->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-fw fa-eraser"></i> Reset Ujian</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Script auto show modal --}}
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#resetAttemptModal').modal('show');
+        });
+    </script>
+    @endpush
+    @endif
 @endsection

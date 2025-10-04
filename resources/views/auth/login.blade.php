@@ -9,6 +9,8 @@
     <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/bootstrap.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/all.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/exam.css') }}">
+
+    <link rel="shortcut icon" href="{{ asset('storage/kandita.webp') }}" type="image/x-icon">
 </head>
 <body>
 
@@ -20,8 +22,6 @@
         <div class="row justify-content-center">
             <div class="col-md-4">
                 <div class="card" style="border: 0;">
-                    <div class="header-login">
-                    </div>
                     <div class="card-body p-5">
                         <div class="header-login mb-4">
                             <h3>Selamat Datang</h3>

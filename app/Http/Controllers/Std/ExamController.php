@@ -99,12 +99,21 @@ class ExamController extends Controller
                 : $sessionQuery->get();
         }
 
+        // Check for ongoing in_progress attempt
+        $ongoingAttempt = ExamAttempt::with(['exam', 'session.subject'])
+            ->where('participant_type', $participant['class'])
+            ->where('participant_id', $participant['id'])
+            ->where('status', 'in_progress')
+            ->latest('id')
+            ->first();
+
         return view('std.confirmation', [
             'title' => 'Exam Confirmation',
             'sessions' => $availableSessions,
             'hasActiveSessions' => $activeSessions->isNotEmpty(),
             'participant' => $participant,
             'participantLabel' => $participant['guard'] === 'students' ? 'Siswa' : 'Guru/Staff',
+            'ongoingAttempt' => $ongoingAttempt,
         ]);
     }
 
@@ -782,5 +791,26 @@ class ExamController extends Controller
             ->where('participant_type', $participant['class'])
             ->where('participant_id', $participant['id'])
             ->exists();
+    }
+
+    /**
+     * Reset ongoing attempt if not submitted
+     */
+    public function resetAttempt($attemptId)
+    {
+        $participant = $this->resolveParticipant();
+
+        $attempt = ExamAttempt::where('id', $attemptId)
+            ->where('participant_type', $participant['class'])
+            ->where('participant_id', $participant['id'])
+            ->where('status', 'in_progress')
+            ->firstOrFail();
+
+        // Delete the attempt and its questions
+        $attempt->questions()->delete();
+        $attempt->delete();
+
+        toast('Ujian berhasil direset. Anda dapat memulai ulang.', 'success');
+        return redirect()->route('std.confirmation');
     }
 }

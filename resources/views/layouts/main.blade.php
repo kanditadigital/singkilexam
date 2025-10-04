@@ -14,6 +14,8 @@
     <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/components.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('vendor/stislaravel/css/all.min.css') }}">
 
+    <link rel="shortcut icon" href="{{ asset('storage/kandita.webp') }}" type="image/x-icon">
+
 </head>
 <body>
 
