@@ -9,7 +9,7 @@
                     <p class="text-muted mb-0">Pantau nilai peserta secara realtime. Data diperbarui otomatis.</p>
                 </div>
                 <div class="col-lg-6 text-lg-right mt-3 mt-lg-0">
-                    <span class="badge badge-success" id="public-live-score-status">Aktif</span>
+                    <span class="badge bg-danger" id="public-live-score-status">Tidak Aktif</span>
                     <span class="text-muted small d-block mt-2" id="public-live-score-updated">Menunggu data...</span>
                 </div>
             </div>

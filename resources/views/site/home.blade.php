@@ -6,9 +6,8 @@
         <div class="container">
             <div class="row justify-content-center align-items-center">
                 <div class="col-md-8">
-                    <h1 class="hero-title">Selamat Datang di Sistem Ujian Online</h1>
-                    <p class="hero-subtitle">Platform terpercaya untuk mengelola dan melaksanakan ujian secara daring dengan mudah dan efisien.</p>
-                    <a href="#about" class="btn btn-hero">Pelajari Lebih Lanjut</a>
+                    <h3 class="hero-title">Computer Assissted Test (CAT)</h3>
+                    <p class="hero-subtitle">Platform ujian online berbasis komputer untuk melaksanakan tryout TKA, ANBK dan Uji Kompetensi Guru.</p>
                 </div>
                 <div class="col-md-4">
                     <div class="card card-login shadow">
@@ -48,20 +47,11 @@
             </div>
         </div>
     </div>
-    <div id="about" class="home-about p-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-6 text-center">
-                    <h4>Apa Itu Assesmen Nasional?</h4>
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="statistic" class="statistics-section py-5 bg-light">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-12 text-center mb-4">
-                    <h2>Statistik Sistem</h2>
+                    <h2>Data Statistik</h2>
                 </div>
             </div>
             <div class="row mb-4">

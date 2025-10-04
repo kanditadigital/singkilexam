@@ -5,8 +5,8 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="card-title mb-0">Download Exambrowser</h3>
+                    <div class="card-header bg-dark text-white">
+                        <h4 class="card-title mb-0 py-3"><i class="fas fa-fw fa-download"></i> Download Exambrowser</h4>
                     </div>
                     <div class="card-body">
                         <p class="lead">Pilih versi Exambrowser yang sesuai dengan sistem operasi Anda untuk mengikuti ujian online.</p>

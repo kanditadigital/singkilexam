@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container">
-      <a class="navbar-brand" href="#">Examdita</a>
+      <a class="navbar-brand" href="/">Examdita</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -9,7 +9,7 @@
           <a class="nav-link me-3" aria-current="page" href="/">Beranda</a>
           <a class="nav-link me-3" href="#statistic">Statistik</a>
           <a class="nav-link me-3" href="{{ route('exambrowser') }}">Exambrowser</a>
-          <a class="nav-link" href="{{ route('live-score') }}">Live Score</a>
+          <a class="nav-link" href="{{ route('live-score') }}"><span class="badge bg-danger py-2"><i class="fas fa-fw fa-play"></i> Live Score</span></a>
         </div>
       </div>
     </div>
