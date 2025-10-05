@@ -12,21 +12,12 @@
             <div class="card-body mb-0">
                 <form action="{{ route('sch.employee.store') }}" method="post">
                     @csrf
-                    <div class="form-group row">
-                        <div class="col-md-6">
-                            <label for="employee_name">Nama <span class="text-danger">*</span></label>
-                            <input type="text" name="employee_name" id="employee_name" class="form-control @error('employee_name') is-invalid @enderror" value="{{ old('employee_name') }}" placeholder="Masukkan nama guru/staff">
-                            @error('employee_name')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="username">Username <span class="text-danger">*</span></label>
-                            <input type="text" name="username" id="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username') }}" placeholder="Masukkan username">
-                            @error('username')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
+                    <div class="form-group">
+                        <label for="employee_name">Nama <span class="text-danger">*</span></label>
+                        <input type="text" name="employee_name" id="employee_name" class="form-control @error('employee_name') is-invalid @enderror" value="{{ old('employee_name') }}" placeholder="Masukkan nama guru/staff">
+                        @error('employee_name')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div class="form-group row">
                         <div class="col-md-6">

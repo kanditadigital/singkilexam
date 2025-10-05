@@ -98,7 +98,7 @@
 
                     @if(in_array($question->question_format, ['text','text_image']))
                         <div class="question-text align-justify">
-                            {{ $question->question_text }}
+                            {!! $question->question_text !!}
                         </div>
                     @endif
                 </div>

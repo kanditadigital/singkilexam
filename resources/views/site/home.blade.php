@@ -229,10 +229,9 @@
         });
 
         function format(branch) {
-            let html = '<table class="table table-sm school-table"><thead><tr><th></th><th>Nama Sekolah</th><th>Jumlah Guru</th><th>Jumlah Siswa</th></tr></thead><tbody>';
+            let html = '<table class="table table-sm school-table"><thead><tr><th>Nama Sekolah</th><th>Jumlah Guru</th><th>Jumlah Siswa</th></tr></thead><tbody>';
             branch.schools.forEach(school => {
-                html += `<tr data-school-id="${school.id}">
-                    <td class="school-control" style="cursor:pointer; width:20px;">+</td>
+                html += `<tr>
                     <td>${school.school_name}</td>
                     <td>${school.employees.length}</td>
                     <td>${school.students.length}</td>
@@ -242,38 +241,6 @@
             return html;
         }
 
-        // Add event listener for school expansion
-        $('#statisticsTable').on('click', '.school-control', function() {
-            const tr = $(this).closest('tr');
-            const schoolId = tr.data('school-id');
-            const branches = @json($branches);
-            const school = branches.flatMap(b => b.schools).find(s => s.id == schoolId);
-
-            if (school) {
-                if (tr.next().hasClass('school-details-row')) {
-                    // Already expanded, collapse
-                    tr.next().remove();
-                    $(this).html('+');
-                } else {
-                    // Expand
-                    tr.after(`<tr class="school-details-row"><td colspan="4">${formatSchoolDetails(school)}</td></tr>`);
-                    $(this).html('-');
-                }
-            }
-        });
-
-        function formatSchoolDetails(school) {
-            let html = '<div class="row"><div class="col-md-6"><h6>Guru</h6><table class="table table-sm"><thead><tr><th>Nama Guru</th></tr></thead><tbody>';
-            school.employees.forEach(employee => {
-                html += `<tr><td>${employee.employee_name}</td></tr>`;
-            });
-            html += '</tbody></table></div><div class="col-md-6"><h6>Siswa</h6><table class="table table-sm"><thead><tr><th>Nama Siswa</th></tr></thead><tbody>';
-            school.students.forEach(student => {
-                html += `<tr><td>${student.student_name}</td></tr>`;
-            });
-            html += '</tbody></table></div></div>';
-            return html;
-        }
     });
 </script>
 

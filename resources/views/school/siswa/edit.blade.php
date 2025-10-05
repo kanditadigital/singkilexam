@@ -48,6 +48,10 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" name="reset_password" value="1" id="reset_password" class="form-check-input">
+                        <label class="form-check-label" for="reset_password">Reset password (password baru akan dibuat otomatis)</label>
+                    </div>
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Simpan</button>
                     </div>

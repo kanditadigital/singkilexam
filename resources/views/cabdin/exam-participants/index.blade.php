@@ -35,10 +35,10 @@
                     <thead class="thead-dark">
                         <tr class="text-center">
                             <th>No.</th>
+                            <th>Nama Peserta</th>
                             <th>Nama Sekolah</th>
-                            <th>Jumlah Siswa</th>
-                            <th>Jumlah Peserta Ujian</th>
                             <th>Mata Pelajaran</th>
+                            <th>Nama Ujian</th>
                         </tr>
                     </thead>
                 </table>
@@ -64,10 +64,10 @@ $(function () {
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'participant_name', name: 'participant_name' },
             { data: 'school_name', name: 'school_name' },
-            { data: 'students_count', name: 'students_count', className: 'text-center' },
-            { data: 'participants_count', name: 'participants_count', className: 'text-center' },
-            { data: 'subjects', name: 'subjects' }
+            { data: 'subjects', name: 'subjects' },
+            { data: 'exam_name', name: 'exam_name' }
         ]
     });
 

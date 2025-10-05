@@ -32,34 +32,40 @@ class DashboardController extends Controller
         $branch = Auth::guard('branches')->user();
 
         if ($request->ajax()) {
-            $schoolsQuery = $branch->schools()->with(['students', 'examParticipants.exam.sessions.subject']);
+            $participantsQuery = ExamParticipant::with(['school', 'exam.sessions.subject', 'participant'])
+                ->whereHas('school', function ($query) use ($branch) {
+                    $query->where('branch_id', $branch->id);
+                });
 
             // Filter by school if provided
             if ($request->filled('school_id')) {
-                $schoolsQuery->where('id', $request->school_id);
+                $participantsQuery->where('school_id', $request->school_id);
             }
 
-            $schools = $schoolsQuery->get();
+            // Filter by subject if provided
+            if ($request->filled('subject_id')) {
+                $participantsQuery->whereHas('exam.sessions', function ($query) use ($request) {
+                    $query->where('subject_id', $request->subject_id);
+                });
+            }
 
-            $data = $schools->map(function ($school) use ($request) {
-                $examParticipants = $school->examParticipants;
+            $participants = $participantsQuery->get();
 
-                // Filter by subject if provided
-                if ($request->filled('subject_id')) {
-                    $examParticipants = $examParticipants->filter(function ($participant) use ($request) {
-                        return $participant->exam->sessions->contains('subject_id', $request->subject_id);
-                    });
+            $data = $participants->map(function ($participant) {
+                $name = '';
+                if ($participant->participant_type === 'App\\Models\\Student') {
+                    $name = $participant->participant->student_name ?? '';
+                } elseif ($participant->participant_type === 'App\\Models\\Employee') {
+                    $name = $participant->participant->employee_name ?? '';
                 }
 
-                $subjects = $examParticipants->flatMap(function ($participant) {
-                    return $participant->exam->sessions->pluck('subject.subject_name');
-                })->unique()->implode(', ');
+                $subjects = $participant->exam->sessions->pluck('subject.subject_name')->unique()->implode(', ');
 
                 return [
-                    'school_name' => $school->school_name,
-                    'students_count' => $school->students()->count(),
-                    'participants_count' => $examParticipants->count(),
+                    'participant_name' => $name,
+                    'school_name' => $participant->school->school_name,
                     'subjects' => $subjects,
+                    'exam_name' => $participant->exam->exam_name,
                 ];
             });
 

@@ -103,6 +103,12 @@ class SchExamParticipantController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('checkbox', function (ExamParticipant $participant) {
+                return '<div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input registered-select" id="registered-checkbox-' . $participant->id . '" value="' . $participant->id . '">
+                    <label class="custom-control-label" for="registered-checkbox-' . $participant->id . '"></label>
+                </div>';
+            })
             ->addColumn('type_label', fn (ExamParticipant $participant) => $this->typeLabelFromClass($participant->participant_type))
             ->addColumn('name', fn (ExamParticipant $participant) => $this->participantName($participant))
             ->addColumn('identifier', fn (ExamParticipant $participant) => $this->participantIdentifier($participant))
@@ -110,7 +116,7 @@ class SchExamParticipantController extends Controller
             ->addColumn('action', function (ExamParticipant $participant) {
                 return '<button type="button" class="btn btn-outline-danger btn-sm remove-participant" data-id="' . $participant->id . '"><i class="fas fa-trash"></i> Hapus</button>';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['checkbox', 'action'])
             ->toJson();
     }
 
@@ -210,6 +216,58 @@ class SchExamParticipantController extends Controller
         ]);
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $schoolId = Auth::guard('schools')->id();
+        $data = $request->validate([
+            'participant_ids' => 'required|array',
+            'participant_ids.*' => 'integer',
+        ]);
+
+        $ids = collect($data['participant_ids'])->unique()->values();
+        if ($ids->isEmpty()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tidak ada peserta dipilih.',
+            ]);
+        }
+
+        $participants = ExamParticipant::whereIn('id', $ids)
+            ->where('school_id', $schoolId)
+            ->get();
+
+        if ($participants->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Peserta tidak ditemukan.',
+            ], 404);
+        }
+
+        DB::transaction(function () use ($participants, $schoolId) {
+            foreach ($participants as $participant) {
+                ExamParticipantLog::create([
+                    'exam_id' => $participant->exam_id,
+                    'school_id' => $participant->school_id,
+                    'participant_type' => $participant->participant_type,
+                    'participant_id' => $participant->participant_id,
+                    'performed_by' => $schoolId,
+                    'action' => 'removed',
+                    'meta' => [
+                        'participant_record_id' => $participant->id,
+                        'timestamp' => now()->toISOString(),
+                    ],
+                ]);
+            }
+
+            ExamParticipant::whereIn('id', $participants->pluck('id'))->delete();
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Peserta ujian berhasil dihapus.',
+        ]);
+    }
+
     private function resolveType(?string $type): string
     {
         $type = $type ? strtolower($type) : 'student';
@@ -278,6 +336,144 @@ class SchExamParticipantController extends Controller
             ->pluck('id');
     }
 
+    private function generateRandomUsername(): string
+    {
+        return Str::random(6, '0123456789abcdefghijklmnopqrstuvwxyz');
+    }
+
+    public function participantCards(Request $request)
+    {
+        $school = Auth::guard('schools')->user();
+        $exams = Exam::orderByDesc('created_at')->get();
+
+        return view('school.participant-cards.index', [
+            'title' => 'Kartu Peserta Ujian',
+            'exams' => $exams,
+            'selectedExamId' => $request->integer('exam_id'),
+            'selectedType' => $request->input('type'),
+            'school' => $school,
+        ]);
+    }
+
+    public function previewCards(Request $request)
+    {
+        $schoolId = Auth::guard('schools')->id();
+        $examId = $request->integer('exam_id');
+        $type = $request->input('type');
+
+        if (!$examId) {
+            return response()->json(['error' => 'Pilih ujian terlebih dahulu.'], 400);
+        }
+
+        $query = ExamParticipant::with(['participant', 'exam'])
+            ->where('exam_id', $examId)
+            ->where('school_id', $schoolId);
+
+        if ($type && in_array($type, ['student', 'employee'])) {
+            $participantClass = $this->participantClass($type);
+            $query->where('participant_type', $participantClass);
+        }
+
+        $participants = $query->get()
+            ->map(function ($participant) {
+                $user = $participant->participant;
+                if ($participant->participant_type === Employee::class) {
+                    $username = $user->username ?? $this->generateRandomUsername();
+                    $identifier = $username;
+                    $password = $username . '*';
+                } else {
+                    $identifier = $this->participantIdentifier($participant);
+                    $password = $user->student_nisn . '*';
+                }
+                return [
+                    'name' => $this->participantName($participant),
+                    'identifier' => $identifier,
+                    'type' => $this->typeLabelFromClass($participant->participant_type),
+                    'exam_name' => $participant->exam->exam_name,
+                    'exam_code' => $participant->exam->exam_code,
+                    'school_name' => Auth::guard('schools')->user()->school_name,
+                    'photo' => $user ? ($participant->participant_type === \App\Models\Employee::class ? $user->employee_photo : $user->student_photo) : null,
+                    'password' => $password,
+                    'meta' => $this->participantMeta($participant),
+                ];
+            });
+
+        $exam = Exam::find($examId);
+
+        $pdf = Pdf::loadView('school.participant-cards.cards-pdf', [
+            'participants'  => $participants,
+            'exam'          => $exam,
+            'school'        => Auth::guard('schools')->user(),
+        ])->setPaper('a4', 'landscape');
+
+        // Get PDF content as string and base64 encode for preview
+        $pdfContent = $pdf->output();
+        $base64Pdf = base64_encode($pdfContent);
+        $dataUrl = 'data:application/pdf;base64,' . $base64Pdf;
+
+        return response()->json([
+            'pdf_url' => $dataUrl,
+        ]);
+    }
+
+    public function downloadCards(Request $request)
+    {
+        $schoolId = Auth::guard('schools')->id();
+        $examId = $request->integer('exam_id');
+        $type = $request->input('type');
+
+        if (!$examId) {
+            return response()->json(['error' => 'Pilih ujian terlebih dahulu.'], 400);
+        }
+
+        $query = ExamParticipant::with(['participant', 'exam'])
+            ->where('exam_id', $examId)
+            ->where('school_id', $schoolId);
+
+        if ($type && in_array($type, ['student', 'employee'])) {
+            $participantClass = $this->participantClass($type);
+            $query->where('participant_type', $participantClass);
+        }
+
+        $participants = $query->get()
+            ->map(function ($participant) {
+                $user = $participant->participant;
+                if ($participant->participant_type === Employee::class) {
+                    $username = $user->username ?? $this->generateRandomUsername();
+                    $identifier = $username;
+                    $password = $username . '*';
+                } else {
+                    $identifier = $this->participantIdentifier($participant);
+                    $password = $user->student_nisn . '*';
+                }
+                return [
+                    'name' => $this->participantName($participant),
+                    'identifier' => $identifier,
+                    'type' => $this->typeLabelFromClass($participant->participant_type),
+                    'exam_name' => $participant->exam->exam_name,
+                    'exam_code' => $participant->exam->exam_code,
+                    'school_name' => Auth::guard('schools')->user()->school_name,
+                    'photo' => $user ? ($participant->participant_type === \App\Models\Employee::class ? $user->employee_photo : $user->student_photo) : null,
+                    'password' => $password,
+                    'meta' => $this->participantMeta($participant),
+                ];
+            });
+
+        $exam = Exam::find($examId);
+
+        $pdf = Pdf::loadView('school.participant-cards.cards-pdf', [
+            'participants' => $participants,
+            'exam' => $exam,
+            'school' => Auth::guard('schools')->user(),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        $typeSuffix = $type ? '-' . $type : '';
+        $filename = 'kartu-peserta-' . Str::slug($exam->exam_name) . $typeSuffix . '-' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     public function printCards(Exam $exam)
     {
         $schoolId = Auth::guard('schools')->id();
@@ -291,15 +487,23 @@ class SchExamParticipantController extends Controller
             ->get()
             ->map(function ($participant) {
                 $user = $participant->participant;
+                if ($participant->participant_type === Employee::class) {
+                    $username = $user->username ?? $this->generateRandomUsername();
+                    $identifier = $username;
+                    $password = $username . '*';
+                } else {
+                    $identifier = $this->participantIdentifier($participant);
+                    $password = $user->student_nisn . '*';
+                }
                 return [
                     'name' => $this->participantName($participant),
-                    'identifier' => $this->participantIdentifier($participant),
+                    'identifier' => $identifier,
                     'type' => $this->typeLabelFromClass($participant->participant_type),
                     'exam_name' => $participant->exam->exam_name,
                     'exam_code' => $participant->exam->exam_code,
                     'school_name' => Auth::guard('schools')->user()->school_name,
                     'photo' => $user ? ($participant->participant_type === \App\Models\Employee::class ? $user->employee_photo : $user->student_photo) : null,
-                    'password' => 'password123', // Default password for all users
+                    'password' => $password,
                     'meta' => $this->participantMeta($participant),
                 ];
             });
@@ -312,38 +516,6 @@ class SchExamParticipantController extends Controller
         ])->setPaper('a4', 'portrait');
 
         $filename = 'kartu-peserta-' . Str::slug($exam->exam_name) . '-' . now()->format('Ymd_His') . '.pdf';
-
-        return $pdf->download($filename);
-    }
-
-    public function printMinutes(Exam $exam)
-    {
-        $schoolId = Auth::guard('schools')->id();
-        if (!$exam) {
-            abort(404);
-        }
-
-        $participants = ExamParticipant::with(['participant'])
-            ->where('exam_id', $exam->id)
-            ->where('school_id', $schoolId)
-            ->get()
-            ->map(function ($participant) {
-                return [
-                    'name' => $this->participantName($participant),
-                    'identifier' => $this->participantIdentifier($participant),
-                    'type' => $this->typeLabelFromClass($participant->participant_type),
-                    'meta' => $this->participantMeta($participant),
-                ];
-            });
-
-        $pdf = Pdf::loadView('school.exam-participants.minutes-pdf', [
-            'participants' => $participants,
-            'exam' => $exam,
-            'school' => Auth::guard('schools')->user(),
-            'generatedAt' => now(),
-        ])->setPaper('a4', 'portrait');
-
-        $filename = 'berita-acara-' . Str::slug($exam->exam_name) . '-' . now()->format('Ymd_His') . '.pdf';
 
         return $pdf->download($filename);
     }

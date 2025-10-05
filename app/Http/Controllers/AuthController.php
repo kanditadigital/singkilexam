@@ -147,37 +147,4 @@ class AuthController extends Controller
         return redirect('/bro-login');
     }
 
-    /**
-     * Get the current authenticated user type and details
-     *
-     * @return array
-     */
-    public function getCurrentUser()
-    {
-        if (Auth::guard('students')->check()) {
-            return [
-                'type' => 'student',
-                'user' => Auth::guard('students')->user(),
-                'guard' => 'students'
-            ];
-        } elseif (Auth::guard('employees')->check()) {
-            return [
-                'type' => 'employee',
-                'user' => Auth::guard('employees')->user(),
-                'guard' => 'employees'
-            ];
-        } elseif (Auth::check()) {
-            return [
-                'type' => 'admin',
-                'user' => Auth::user(),
-                'guard' => 'web'
-            ];
-        }
-
-        return [
-            'type' => null,
-            'user' => null,
-            'guard' => null
-        ];
-    }
 }

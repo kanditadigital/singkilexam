@@ -48,7 +48,7 @@ class SiswaController extends Controller
                 ->make(true);
         }
         return view('office.siswa.index',[
-            'title' => 'Siswa',
+            'title' => 'Data Siswa',
         ]);
     }
 
@@ -77,7 +77,7 @@ class SiswaController extends Controller
         Student::create($this->studentPayload($validated, $photoPath, $rawPassword));
 
         toast('Siswa berhasil ditambahkan', 'success');
-        return redirect()->route('siswa.index');
+        return redirect()->route('disdik.siswa.index');
     }
 
     /**
@@ -114,7 +114,7 @@ class SiswaController extends Controller
         $student->update($this->studentPayload($validated, $photoPath));
 
         toast('Siswa berhasil diubah', 'success');
-        return redirect()->route('siswa.index');
+        return redirect()->route('disdik.siswa.index');
     }
 
     /**

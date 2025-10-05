@@ -4,7 +4,7 @@
 <div class="section-body">
     <div class="card shadow border-0">
         <div class="card-header bg-primary text-white py-2">
-            <h4 class="mb-0"><i class="fas fa-eye"></i> Monitoring Ujian</h4>
+            <h4 class="mb-0"><i class="fas fa-desktop"></i> Monitoring Ujian</h4>
         </div>
 
         <div class="card-body">

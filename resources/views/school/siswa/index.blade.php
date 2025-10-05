@@ -13,8 +13,8 @@
                 </div>
             </div>
             <div class="card-body table-responsive">
-                <table class="table table-bordered table-sm" id="datayajra">
-                    <thead>
+                <table class="table table-bordered table-striped table-hover table-sm" id="datayajra">
+                    <thead class="thead-dark">
                         <tr>
                             <th>No.</th>
                             <th>Nama Siswa</th>
@@ -47,13 +47,21 @@
                 { data: 'student_name', name: 'student_name' },
                 { data: 'username', name: 'username' },
                 { data: 'student_gender', name: 'student_gender' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, width: '20%', className: 'text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, width: '25%', className: 'text-center' },
             ]
         });
 
         $('#datayajra').on('click', '.edit', function() {
             const id = $(this).data('id');
             window.location.href = `{{ url('sch/student') }}/${id}/edit`;
+        });
+
+        // Reset password dengan konfirmasi SweetAlert
+        $('#datayajra').on('click', '.reset-password', function(event) {
+            event.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            confirmResetPassword(id, name);
         });
 
         // Hapus data dengan konfirmasi SweetAlert
@@ -76,6 +84,46 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     deleteSiswa(id);
+                }
+            });
+        }
+
+        function confirmResetPassword(id, name) {
+            Swal.fire({
+                title: 'Reset Password?',
+                text: `Yakin ingin mereset password ${name}? Password baru akan dibuat otomatis.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, reset!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    resetPassword(id);
+                }
+            });
+        }
+
+        function resetPassword(id) {
+            $.ajax({
+                url: `{{ url('sch/student') }}/${id}/reset-password`,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id: id
+                },
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: `Password berhasil direset. Password baru: ${response.new_password}`,
+                        icon: 'success',
+                        timer: 5000,
+                        showConfirmButton: true
+                    });
+                },
+                error: function() {
+                    Swal.fire('Gagal!', 'Terjadi kesalahan saat mereset password.', 'error');
                 }
             });
         }

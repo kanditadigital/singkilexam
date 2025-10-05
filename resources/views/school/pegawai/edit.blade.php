@@ -22,11 +22,8 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="username">Username <span class="text-danger">*</span></label>
-                            <input type="text" name="username" id="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $employee->username) }}" placeholder="Masukkan username">
-                            @error('username')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
+                            <label for="username">Username</label>
+                            <input type="text" name="username" id="username" class="form-control" value="{{ $employee->username }}" readonly>
                         </div>
                     </div>
                     <div class="form-group row">

@@ -37,10 +37,13 @@ class SchStudentController extends Controller
                     $editButton = '<button type="button" class="btn btn-outline-primary btn-sm edit ml-2" data-id="' . $row->id . '">
                         <i class="fas fa-pencil-alt"></i> Edit
                     </button>';
+                    $resetButton = '<button type="button" class="btn btn-warning btn-sm reset-password ml-2" data-id="' . $row->id . '" data-name="' . $row->student_name . '">
+                        <i class="fas fa-key"></i> Reset
+                    </button>';
                     $deleteButton = '<button type="button" class="btn btn-outline-danger btn-sm delete ml-2" data-id="' . $row->id . '">
                         <i class="fas fa-trash"></i> Hapus
                     </button>';
-                    return $editButton . $deleteButton;
+                    return $editButton . $resetButton . $deleteButton;
                 })
                 ->rawColumns(["action"])
                 ->make(true);
@@ -81,7 +84,6 @@ class SchStudentController extends Controller
         }
 
         // Generate password once
-        $rawPassword = $this->kanditaService->generatePassword();
         $idsch = Auth::guard('schools')->user()->id;
         $datasch = School::where('id', $idsch)->first();
         Student::create([
@@ -90,7 +92,7 @@ class SchStudentController extends Controller
             'student_name'      => $request->student_name,
             'student_nisn'      => $request->student_nisn,
             'username'          => $request->student_nisn,
-            'password'          => Hash::make($rawPassword),
+            'password'          => Hash::make($request->student_nisn.'*'),
             'student_gender'    => $request->student_gender,
             'student_photo'     => $photoPath,
         ]);
@@ -99,13 +101,6 @@ class SchStudentController extends Controller
         return redirect()->route('sch.student.index');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
 
     /**
      * Show the form for editing the specified resource.
@@ -128,6 +123,7 @@ class SchStudentController extends Controller
             'student_nisn'      => 'required',
             'student_gender'    => 'required',
             'student_photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'reset_password'    => 'nullable|boolean',
         ]);
 
         $idsch = Auth::guard('schools')->user()->id;
@@ -141,21 +137,27 @@ class SchStudentController extends Controller
             $photoPath = $datasch->student_photo;
         }
 
-        // Generate password once
-        $rawPassword = $this->kanditaService->generatePassword();
-        $stddata = Student::findOrfail($id);
-        $stddata->update([
+        $payload = [
             'branch_id'         => $datasch->branch_id,
             'school_id'         => $idsch,
             'student_name'      => $request->student_name,
             'student_nisn'      => $request->student_nisn,
             'username'          => $request->student_nisn,
-            'password'          => Hash::make($rawPassword),
             'student_gender'    => $request->student_gender,
             'student_photo'     => $photoPath,
-        ]);
+        ];
 
-        toast('Siswa berhasil ditambahkan', 'success');
+        if ($request->boolean('reset_password')) {
+            $newPassword = $this->kanditaService->generatePassword();
+            $payload['password'] = Hash::make($newPassword);
+        } else {
+            $payload['password'] = Hash::make($request->student_nisn.'*');
+        }
+
+        $stddata = Student::findOrfail($id);
+        $stddata->update($payload);
+
+        toast('Siswa berhasil diperbarui', 'success');
         return redirect()->route('sch.student.index');
     }
 
@@ -181,5 +183,18 @@ class SchStudentController extends Controller
 
         toast('Data siswa berhasil diimpor', 'success');
         return redirect()->route('sch.student.index');
+    }
+
+    public function resetPassword(string $id)
+    {
+        $student = Student::where('school_id', Auth::guard('schools')->id())->findOrFail($id);
+
+        $newPassword = $this->kanditaService->generatePassword();
+        $student->update([
+            'password' => Hash::make($newPassword),
+        ]);
+
+        toast('Password siswa berhasil direset', 'success');
+        return response()->json(['success' => true, 'new_password' => $newPassword]);
     }
 }

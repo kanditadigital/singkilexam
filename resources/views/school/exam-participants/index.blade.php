@@ -2,14 +2,7 @@
 
 @section('content')
     <div class="section-body">
-        <div class="alert alert-danger" id="exam-helper" {{ $selectedExamId ? 'style=display:none;' : '' }}>
-            Silakan pilih ujian terlebih dahulu untuk menambah atau melihat peserta.
-        </div>
-
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white py-1">
-                <h4><i class="fas fa-fw fa-user-check"></i> Kelola Peserta Ujian</h4>
-            </div>
+        <div class="card mb-4 bg-secondary text-white">
             <div class="card-body">
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-4">
@@ -23,14 +16,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-4">
                         <label for="participant_type">Jenis Peserta</label>
                         <select id="participant_type" class="form-control custom-select">
                             <option value="student">Siswa</option>
                             <option value="employee">Guru & Staff</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-3" id="gender-filter-group">
+                    <div class="form-group col-md-4" id="gender-filter-group">
                         <label for="filter_gender">Filter Jenis Kelamin</label>
                         <select id="filter_gender" class="form-control custom-select">
                             <option value="">Semua</option>
@@ -38,74 +31,61 @@
                             <option value="Perempuan">Perempuan</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-2 text-right">
-                        <button id="btn-save-participants" class="btn btn-primary btn-block" disabled>
-                            <i class="fas fa-save"></i> Simpan
-                        </button>
-                    </div>
-                    <div class="form-group col-md-2">
-                        <button id="btn-print-cards" class="btn btn-info btn-block" disabled>
-                            <i class="fas fa-print"></i> Kartu Peserta
-                        </button>
-                    </div>
-                    <div class="form-group col-md-2">
-                        <button id="btn-print-minutes" class="btn btn-secondary btn-block" disabled>
-                            <i class="fas fa-file-alt"></i> Berita Acara
-                        </button>
-                    </div>
                 </div>
+            </div>
+        </div>
 
-                <hr>
-
-                <div class="row mt-4">
-                    <div class="col-md-12">
-                        <div class="card border">
-                            <div class="card-header bg-primary text-white py-1">
-                                <h4><i class="fas fa-users"></i> Daftar Peserta Tersedia</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm mb-0" id="students-table">
-                                        <thead>
-                                            <tr>
-                                                <th width="5%">No</th>
-                                                <th width="15%">Pilih</th>
-                                                <th>Nama</th>
-                                                <th>Identitas</th>
-                                                <th>Info</th>
-                                            </tr>
-                                        </thead>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12">
-                        <div class="card border">
-                            <div class="card-header bg-primary text-dark py-1">
-                                <h4><i class="fas fa-list"></i> Peserta Terdaftar</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm mb-0" id="participants-table">
-                                        <thead>
-                                            <tr>
-                                                <th width="5%">No</th>
-                                                <th>Nama</th>
-                                                <th>Jenis Peserta</th>
-                                                <th>Info</th>
-                                                <th width="20%">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Available Participants Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                <h4><i class="fas fa-fw fa-th-list"></i> Data Peserta Tersedia</h4>
+                <button id="btn-save-participants" class="btn btn-reka btn-sm" disabled>
+                    <i class="fas fa-plus"></i> Tambah Peserta Terpilih
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover table-sm mb-0" id="students-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th width="5%">No</th>
+                                <th width="15%" class="text-center">
+                                    <input type="checkbox" id="select-all-participants" class="mt-1">
+                                </th>
+                                <th>Nama</th>
+                                <th>Identitas</th>
+                                <th>Info</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
+            </div>
+        </div>
 
-                <div class="mt-3">
-                    <small class="text-muted">Catatan: Peserta yang sudah terdaftar ditandai dengan badge hijau dan tidak dapat dipilih ulang. Gunakan tabel "Peserta Terdaftar" untuk menghapus peserta.</small>
+        <!-- Registered Participants Card -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                <h4><i class="fas fa-fw fa-th-list"></i> Peserta Terdaftar</h4>
+                <button id="btn-bulk-delete" class="btn btn-reka btn-sm" disabled>
+                    <i class="fas fa-trash"></i> Hapus Terpilih
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover table-sm mb-0" id="participants-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th width="5%" class="text-center">
+                                    <input type="checkbox" id="select-all-registered" class="mt-1">
+                                </th>
+                                <th width="5%">No</th>
+                                <th>Nama</th>
+                                <th>Jenis Peserta</th>
+                                <th>Info</th>
+                                <th width="20%">Aksi</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
         </div>
@@ -125,14 +105,13 @@
 <script>
     const destroyTemplate = @json(route('sch.exam-participants.destroy', ['participant' => ':id']));
     const printCardsTemplate = @json(route('sch.exam-participants.print-cards', ['exam' => ':exam']));
-    const printMinutesTemplate = @json(route('sch.exam-participants.print-minutes', ['exam' => ':exam']));
     const routes = {
         students: @json(route('sch.exam-participants.students')),
         registered: @json(route('sch.exam-participants.registered')),
         store: @json(route('sch.exam-participants.store')),
         destroy: (id) => destroyTemplate.replace(':id', id),
-        printCards: (examId) => printCardsTemplate.replace(':exam', examId),
-        printMinutes: (examId) => printMinutesTemplate.replace(':exam', examId)
+        bulkDestroy: @json(route('sch.exam-participants.bulk-destroy')),
+        printCards: (examId) => printCardsTemplate.replace(':exam', examId)
     };
 
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
@@ -142,8 +121,10 @@
     const $genderGroup = $('#gender-filter-group');
     const $saveButton = $('#btn-save-participants');
     const $printCardsButton = $('#btn-print-cards');
-    const $printMinutesButton = $('#btn-print-minutes');
+    const $bulkDeleteButton = $('#btn-bulk-delete');
     const $helper = $('#exam-helper');
+    const $selectAllCheckbox = $('#select-all-participants');
+    const $selectAllRegisteredCheckbox = $('#select-all-registered');
 
     let studentsTable = null;
     let participantsTable = null;
@@ -164,14 +145,39 @@
         return ids;
     }
 
+    function selectedRegisteredIds() {
+        const ids = [];
+        $('#participants-table').find('input.registered-select:checked').each(function () {
+            ids.push($(this).val());
+        });
+        return ids;
+    }
+
     function enableSaveButton() {
         $saveButton.prop('disabled', selectedParticipantIds().length === 0);
+    }
+
+    function enableBulkDeleteButton() {
+        $bulkDeleteButton.prop('disabled', selectedRegisteredIds().length === 0);
+    }
+
+    function updateSelectAllState() {
+        const totalCheckboxes = $('#students-table tbody input.participant-select').length;
+        const checkedCheckboxes = $('#students-table tbody input.participant-select:checked').length;
+        $selectAllCheckbox.prop('checked', checkedCheckboxes === totalCheckboxes && totalCheckboxes > 0);
+        $selectAllCheckbox.prop('indeterminate', checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
+    }
+
+    function updateSelectAllRegisteredState() {
+        const totalCheckboxes = $('#participants-table tbody input.registered-select').length;
+        const checkedCheckboxes = $('#participants-table tbody input.registered-select:checked').length;
+        $selectAllRegisteredCheckbox.prop('checked', checkedCheckboxes === totalCheckboxes && totalCheckboxes > 0);
+        $selectAllRegisteredCheckbox.prop('indeterminate', checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
     }
 
     function enablePrintButtons() {
         const examId = currentExamId();
         $printCardsButton.prop('disabled', !examId);
-        $printMinutesButton.prop('disabled', !examId);
     }
 
     function buildStudentsTable() {
@@ -204,6 +210,7 @@
             ],
             drawCallback: function () {
                 enableSaveButton();
+                updateSelectAllState();
             }
         });
     }
@@ -225,12 +232,17 @@
                 },
             },
             columns: [
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'name', name: 'name' },
                 { data: 'type_label', name: 'type_label' },
                 { data: 'meta', name: 'meta' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' },
-            ]
+            ],
+            drawCallback: function () {
+                updateSelectAllRegisteredState();
+                enableBulkDeleteButton();
+            }
         });
     }
 
@@ -239,6 +251,7 @@
         if (!examId) {
             $helper.show();
             $saveButton.prop('disabled', true);
+            $bulkDeleteButton.prop('disabled', true);
             enablePrintButtons();
             if (studentsTable) studentsTable.clear().draw();
             if (participantsTable) participantsTable.clear().draw();
@@ -294,6 +307,26 @@
 
         $('#students-table').on('change', 'input.participant-select', function () {
             enableSaveButton();
+            updateSelectAllState();
+        });
+
+        $('#participants-table').on('change', 'input.registered-select', function () {
+            enableBulkDeleteButton();
+            updateSelectAllRegisteredState();
+        });
+
+        $selectAllCheckbox.on('change', function () {
+            const isChecked = $(this).is(':checked');
+            $('#students-table tbody input.participant-select').prop('checked', isChecked);
+            enableSaveButton();
+            updateSelectAllState();
+        });
+
+        $selectAllRegisteredCheckbox.on('change', function () {
+            const isChecked = $(this).is(':checked');
+            $('#participants-table tbody input.registered-select').prop('checked', isChecked);
+            enableBulkDeleteButton();
+            updateSelectAllRegisteredState();
         });
 
         $('#participants-table').on('click', '.remove-participant', function () {
@@ -370,13 +403,44 @@
             window.open(routes.printCards(examId), '_blank');
         });
 
-        $printMinutesButton.on('click', function () {
-            const examId = currentExamId();
-            if (!examId) {
-                Swal.fire('Informasi', 'Pilih ujian terlebih dahulu.', 'info');
+        $bulkDeleteButton.on('click', function () {
+            const ids = selectedRegisteredIds();
+
+            if (ids.length === 0) {
+                Swal.fire('Informasi', 'Pilih minimal satu peserta untuk dihapus.', 'info');
                 return;
             }
-            window.open(routes.printMinutes(examId), '_blank');
+
+            Swal.fire({
+                title: 'Hapus Peserta Terpilih?',
+                text: `Anda akan menghapus ${ids.length} peserta dari ujian ini.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    url: routes.bulkDestroy,
+                    type: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    data: {
+                        participant_ids: ids
+                    }
+                }).done(function (response) {
+                    Swal.fire('Berhasil', response.message || 'Peserta berhasil dihapus.', 'success');
+                    if (participantsTable) participantsTable.ajax.reload();
+                    if (studentsTable) studentsTable.ajax.reload(null, false);
+                }).fail(function (xhr) {
+                    const message = xhr.responseJSON?.message || 'Terjadi kesalahan saat menghapus peserta.';
+                    Swal.fire('Gagal', message, 'error');
+                });
+            });
         });
     });
 </script>

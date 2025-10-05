@@ -5,7 +5,7 @@
     <div class="card shadow border-0">
         <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
             <h4 class="mb-0"><i class="fas fa-user-graduate"></i> Data Siswa</h4>
-            <a href="{{ route('cabdin.students.create') }}" class="btn btn-light btn-sm">
+            <a href="{{ route('cabdin.students.create') }}" class="btn btn-reka btn-sm">
                 <i class="fas fa-plus"></i> Tambah
             </a>
         </div>

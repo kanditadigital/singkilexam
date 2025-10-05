@@ -161,6 +161,10 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
     Route::post('employee/import', [SchEmployeeController::class, 'import'])->name('employee.import');
     Route::post('student/import', [SchStudentController::class, 'import'])->name('student.import');
 
+    // Reset password routes
+    Route::post('student/{student}/reset-password', [SchStudentController::class, 'resetPassword'])->name('student.reset-password');
+    Route::post('employee/{employee}/reset-password', [SchEmployeeController::class, 'resetPassword'])->name('employee.reset-password');
+
     Route::get('dashboard', [App\Http\Controllers\Sch\DashboardController::class, 'index'])->name('sch.dashboard');
     // Profile
     Route::get('profile', [SchProfileController::class, 'edit'])->name('profile.edit');
@@ -171,8 +175,13 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
     Route::get('exam-participants/registered', [SchExamParticipantController::class, 'registered'])->name('exam-participants.registered');
     Route::post('exam-participants', [SchExamParticipantController::class, 'store'])->name('exam-participants.store');
     Route::delete('exam-participants/{participant}', [SchExamParticipantController::class, 'destroy'])->name('exam-participants.destroy');
+    Route::delete('exam-participants', [SchExamParticipantController::class, 'bulkDestroy'])->name('exam-participants.bulk-destroy');
     Route::get('exam-participants/print-cards/{exam}', [SchExamParticipantController::class, 'printCards'])->name('exam-participants.print-cards');
-    Route::get('exam-participants/print-minutes/{exam}', [SchExamParticipantController::class, 'printMinutes'])->name('exam-participants.print-minutes');
+
+    // Participant Cards Management
+    Route::get('participant-cards', [SchExamParticipantController::class, 'participantCards'])->name('participant-cards.index');
+    Route::get('participant-cards/preview', [SchExamParticipantController::class, 'previewCards'])->name('participant-cards.preview');
+    Route::get('participant-cards/download', [SchExamParticipantController::class, 'downloadCards'])->name('participant-cards.download');
 
     // Exam Monitoring
     Route::get('exam-monitoring', [SchExamParticipantController::class, 'examMonitoring'])->name('exam-monitoring.index');
