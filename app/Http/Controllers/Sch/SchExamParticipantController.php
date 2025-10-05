@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sch;
 
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
+use App\Models\ExamAttempt;
 use App\Models\ExamParticipant;
 use App\Models\ExamParticipantLog;
 use App\Models\Student;
@@ -345,5 +346,69 @@ class SchExamParticipantController extends Controller
         $filename = 'berita-acara-' . Str::slug($exam->exam_name) . '-' . now()->format('Ymd_His') . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    public function examMonitoring(Request $request)
+    {
+        $school = Auth::guard('schools')->user();
+
+        if ($request->ajax()) {
+            $query = ExamAttempt::with(['participant', 'session.subject'])
+                ->where(function ($q) use ($school) {
+                    $q->where(function ($subQ) use ($school) {
+                        $subQ->where('participant_type', Student::class)
+                             ->whereHas('participant', function ($pQ) use ($school) {
+                                 $pQ->where('school_id', $school->id);
+                             });
+                    })->orWhere(function ($subQ) use ($school) {
+                        $subQ->where('participant_type', Employee::class)
+                             ->whereHas('participant', function ($pQ) use ($school) {
+                                 $pQ->where('school_id', $school->id);
+                             });
+                    });
+                })
+                ->whereNotNull('started_at');
+
+            // Filter by status
+            if ($request->filled('status')) {
+                if ($request->status === 'ongoing') {
+                    $query->whereNull('submitted_at');
+                } elseif ($request->status === 'submitted') {
+                    $query->whereNotNull('submitted_at');
+                }
+            }
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('participant_name', function ($attempt) {
+                    return $attempt->participant_type === Employee::class
+                        ? ($attempt->participant->employee_name ?? '-')
+                        : ($attempt->participant->student_name ?? '-');
+                })
+                ->addColumn('subject_name', function ($attempt) {
+                    return $attempt->session->subject->subject_name ?? '-';
+                })
+                ->addColumn('started_at_formatted', function ($attempt) {
+                    return $attempt->started_at ? $attempt->started_at->format('d/m/Y H:i') : '-';
+                })
+                ->addColumn('duration', function ($attempt) {
+                    if ($attempt->submitted_at) {
+                        $duration = $attempt->submitted_at->diff($attempt->started_at);
+                        return $duration->format('%H:%I:%S');
+                    } else {
+                        $duration = now()->diff($attempt->started_at);
+                        return $duration->format('%H:%I:%S');
+                    }
+                })
+                ->addColumn('submitted_at_formatted', function ($attempt) {
+                    return $attempt->submitted_at ? $attempt->submitted_at->format('d/m/Y H:i') : '-';
+                })
+                ->make(true);
+        }
+
+        return view('school.exam-monitoring.index', [
+            'title' => 'Monitoring Ujian',
+            'school' => $school,
+        ]);
     }
 }

@@ -98,7 +98,7 @@
 
                     @if(in_array($question->question_format, ['text','text_image']))
                         <div class="question-text align-justify">
-                            {!! $question->question_text !!}
+                            {{ $question->question_text }}
                         </div>
                     @endif
                 </div>
@@ -119,7 +119,7 @@
                                 <div class="matching-row">
                                     <div class="matching-col">
                                         <span class="matching-label">{{ $left->option_label }}.</span>
-                                        <span>{!! nl2br(e($left->option_text)) !!}</span>
+                                        <span>{{ nl2br(e($left->option_text)) }}</span>
                                     </div>
                                     <div class="matching-col">
                                         <select name="matching[{{ $left->option_label }}]" class="custom-select">
@@ -153,7 +153,7 @@
                                             <td>
                                             {{-- Tampilkan teks jika ada --}}
                                             @if(!empty($opt->option_text))
-                                                {!! nl2br(e($opt->option_text)) !!}
+                                                {{ nl2br(e($opt->option_text)) }}
                                             @endif
 
                                             {{-- Tampilkan gambar jika ada --}}
@@ -202,7 +202,7 @@
                                             <img src="{{ asset('storage/'.$opt->option_image) }}" alt="Pilihan {{ $opt->option_label }}" class="option-image">
                                         @endif
                                         @if($opt->option_text)
-                                            <div class="option-text">{!! nl2br(e($opt->option_text)) !!}</div>
+                                            <div class="option-text">{{ nl2br(e($opt->option_text)) }}</div>
                                         @endif
                                     </div>
                                 </label>

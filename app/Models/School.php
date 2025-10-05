@@ -49,6 +49,11 @@ class School extends Authenticatable
         return $this->hasMany(Employee::class);
     }
 
+    public function employee()
+    {
+        return $this->hasOne(Employee::class)->where('employee_type', 'school');
+    }
+
     public function examParticipants()
     {
         return $this->hasMany(ExamParticipant::class);

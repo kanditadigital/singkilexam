@@ -37,4 +37,9 @@ class Branch extends Authenticatable
     {
         return $this->hasMany(Employee::class);
     }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class)->where('employee_type', 'cabdin');
+    }
 }

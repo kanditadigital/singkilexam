@@ -81,16 +81,16 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
         'schools' => [
-            'driver' => 'database',
-            'table' => 'schools',
+            'driver' => 'eloquent',
+            'model' => App\Models\School::class,
         ],
         'students' => [
-            'driver' => 'database',
-            'table' => 'students',
+            'driver' => 'eloquent',
+            'model' => App\Models\Student::class,
         ],
         'employees' => [
-            'driver' => 'database',
-            'table' => 'employees',
+            'driver' => 'eloquent',
+            'model' => App\Models\Employee::class,
         ],
         'branches' => [
             'driver' => 'eloquent',

@@ -24,12 +24,14 @@ use App\Http\Controllers\Office\RankingController;
 use App\Http\Controllers\Office\SekolahController;
 
 // --- CABDIN ---
+use App\Http\Controllers\Cabdin\CabdinProfileController;
 use App\Http\Controllers\Sch\SchStudentController;
 use App\Http\Controllers\Sch\SchEmployeeController;
 use App\Http\Controllers\Office\LiveScoreController;
 use App\Http\Controllers\Office\OfficeHomeController;
 // --- SEKOLAH ---
 use App\Http\Controllers\Sch\SchExamParticipantController;
+use App\Http\Controllers\Sch\SchProfileController;
 use App\Http\Controllers\Cabdin\SchoolController as CabdinSchoolController;
 use App\Http\Controllers\Cabdin\StudentController as CabdinStudentController;
 
@@ -87,7 +89,6 @@ Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware('auth:web')
     ->name('dashboard');
 
-
 /*
 |--------------------------------------------------------------------------
 | DISDIK (Admin)
@@ -130,6 +131,13 @@ Route::prefix('disdik')->name('disdik.')->middleware('auth:web')->group(function
 Route::prefix('cabdin')->name('cabdin.')->middleware('auth:branches')->group(function () {
     Route::get('dashboard', [CabdinDashboardController::class, 'index'])->name('dashboard');
 
+    // Profile
+    Route::get('profile', [CabdinProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [CabdinProfileController::class, 'update'])->name('profile.update');
+
+    // Exam Participants
+    Route::get('exam-participants', [App\Http\Controllers\Cabdin\DashboardController::class, 'examParticipants'])->name('exam-participants.index');
+
     Route::resource('schools', CabdinSchoolController::class)->except(['show', 'destroy']);
     Route::post('schools/{school}/toggle-status', [CabdinSchoolController::class, 'toggleStatus'])->name('schools.toggle');
     Route::post('schools/{school}/reset-password', [CabdinSchoolController::class, 'resetPassword'])->name('schools.reset');
@@ -154,6 +162,9 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
     Route::post('student/import', [SchStudentController::class, 'import'])->name('student.import');
 
     Route::get('dashboard', [App\Http\Controllers\Sch\DashboardController::class, 'index'])->name('sch.dashboard');
+    // Profile
+    Route::get('profile', [SchProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [SchProfileController::class, 'update'])->name('profile.update');
     // Exam Participants
     Route::get('exam-participants', [SchExamParticipantController::class, 'index'])->name('exam-participants.index');
     Route::get('exam-participants/students', [SchExamParticipantController::class, 'students'])->name('exam-participants.students');
@@ -162,6 +173,9 @@ Route::prefix('sch')->name('sch.')->middleware('auth:schools')->group(function (
     Route::delete('exam-participants/{participant}', [SchExamParticipantController::class, 'destroy'])->name('exam-participants.destroy');
     Route::get('exam-participants/print-cards/{exam}', [SchExamParticipantController::class, 'printCards'])->name('exam-participants.print-cards');
     Route::get('exam-participants/print-minutes/{exam}', [SchExamParticipantController::class, 'printMinutes'])->name('exam-participants.print-minutes');
+
+    // Exam Monitoring
+    Route::get('exam-monitoring', [SchExamParticipantController::class, 'examMonitoring'])->name('exam-monitoring.index');
 });
 
 

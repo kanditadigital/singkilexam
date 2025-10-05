@@ -36,12 +36,16 @@
                 <li><a class="nav-link" href="{{ route('disdik.ranking.index') }}"><i class="fas fa-trophy"></i> <span>Perengkingan</span></a></li>
             @elseif(Auth::guard('branches')->check())
                 <li><a class="nav-link" href="{{ route('cabdin.dashboard') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                <li><a class="nav-link" href="{{ route('cabdin.profile.edit') }}"><i class="fas fa-user"></i> <span>Profil</span></a></li>
+                <li><a class="nav-link" href="{{ route('cabdin.exam-participants.index') }}"><i class="fas fa-user-check"></i> <span>Peserta Ujian</span></a></li>
                 <li><a class="nav-link" href="{{ route('cabdin.schools.index') }}"><i class="fas fa-school"></i> <span>Data Sekolah</span></a></li>
                 <li><a class="nav-link" href="{{ route('cabdin.students.index') }}"><i class="fas fa-user-graduate"></i> <span>Data Siswa</span></a></li>
             @elseif(Auth::guard('schools')->check())
+                <li><a class="nav-link" href="{{ route('sch.profile.edit') }}"><i class="fas fa-user"></i> <span>Profil</span></a></li>
                 <li><a class="nav-link" href="{{ route('sch.employee.index') }}"><i class="fas fa-users"></i> <span>Data Guru & Staff</span></a></li>
                 <li><a class="nav-link" href="{{ route('sch.student.index') }}"><i class="fas fa-user-friends"></i> <span>Data Siswa</span></a></li>
                 <li><a class="nav-link" href="{{ route('sch.exam-participants.index') }}"><i class="fas fa-user-check"></i> <span>Peserta Ujian</span></a></li>
+                <li><a class="nav-link" href="{{ route('sch.exam-monitoring.index') }}"><i class="fas fa-eye"></i> <span>Monitoring Ujian</span></a></li>
             @endif
         </ul>
         <!-- End Menu -->
