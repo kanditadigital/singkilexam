@@ -15,6 +15,7 @@ class ExamParticipant extends Model
         'school_id',
         'participant_type',
         'participant_id',
+        'exam_session_id',
         'created_by',
     ];
 
@@ -40,6 +41,11 @@ class ExamParticipant extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(School::class, 'created_by');
+    }
+
+    public function examSession()
+    {
+        return $this->belongsTo(ExamSession::class, 'exam_session_id');
     }
 
     public function scopeForParticipant($query, string $type, int $id)

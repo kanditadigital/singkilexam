@@ -8,6 +8,7 @@ use App\Models\ExamAttemptQuestion;
 use App\Models\ExamSession;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\Subject;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Arr;
@@ -319,25 +320,69 @@ class ExamCacheService
             return [];
         }
 
-        $map = [];
+        $subjectIds = collect();
         foreach ($sessions as $session) {
-            $subject = $session->subject;
-            if (!$subject) {
+            $configs = collect($session->session_subjects ?? []);
+            if ($configs->isEmpty()) {
+                if ($session->subject_id) {
+                    $subjectIds->push((int) $session->subject_id);
+                }
                 continue;
             }
 
-            foreach ($subject->questions as $question) {
-                if (!isset($map[$question->id])) {
-                    $map[$question->id] = [
-                        'question' => $this->normalizeQuestion($question),
-                        'options' => [],
-                    ];
+            foreach ($configs as $config) {
+                $subjectIds->push((int) ($config['subject_id'] ?? 0));
+            }
+        }
+
+        $subjectIds = $subjectIds
+            ->filter(static fn($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $subjects = collect();
+        if ($subjectIds->isNotEmpty()) {
+            $subjects = Subject::with(['questions.questionOptions' => function ($q) {
+                $q->orderBy('id');
+            }])->whereIn('id', $subjectIds)->get()->keyBy('id');
+        }
+
+        $map = [];
+        foreach ($sessions as $session) {
+            $configs = collect($session->session_subjects ?? []);
+            if ($configs->isEmpty()) {
+                $subject = $subjects->get((int) $session->subject_id) ?? $session->subject;
+                if (!$subject) {
+                    continue;
                 }
 
-                if (empty($map[$question->id]['options'])) {
-                    $map[$question->id]['options'] = $question->questionOptions->map(function ($option) {
-                        return $this->normalizeOption($option);
-                    })->values()->all();
+                $subject->loadMissing('questions.questionOptions');
+
+                foreach ($subject->questions as $question) {
+                    $this->appendQuestionToCache($map, $question);
+                }
+                continue;
+            }
+
+            foreach ($configs as $config) {
+                $subjectId = (int) ($config['subject_id'] ?? 0);
+                if ($subjectId <= 0) {
+                    continue;
+                }
+
+                $subject = $subjects->get($subjectId);
+                if (!$subject) {
+                    $subject = Subject::with(['questions.questionOptions' => function ($q) {
+                        $q->orderBy('id');
+                    }])->find($subjectId);
+                    if (!$subject) {
+                        continue;
+                    }
+                    $subjects->put($subjectId, $subject);
+                }
+
+                foreach ($subject->questions as $question) {
+                    $this->appendQuestionToCache($map, $question);
                 }
             }
         }
@@ -349,6 +394,20 @@ class ExamCacheService
         $this->runtimeQuestionCache[$runtimeKey] = $map;
 
         return $map;
+    }
+
+    private function appendQuestionToCache(array &$map, Question $question): void
+    {
+        if (isset($map[$question->id])) {
+            return;
+        }
+
+        $map[$question->id] = [
+            'question' => $this->normalizeQuestion($question),
+            'options' => $question->questionOptions->map(function (QuestionOption $option) {
+                return $this->normalizeOption($option);
+            })->values()->all(),
+        ];
     }
 
     private function normalizeQuestion(Question $question): array

@@ -94,7 +94,7 @@ class SchExamParticipantController extends Controller
         $examId = $request->integer('exam_id');
         $filterType = $request->has('type') ? $this->resolveType($request->input('type')) : null;
 
-        $query = ExamParticipant::with(['participant'])
+        $query = ExamParticipant::with(['participant', 'examSession.subject'])
             ->where('school_id', $schoolId)
             ->when($examId, fn ($q) => $q->where('exam_id', $examId))
             ->when($filterType, function ($q) use ($filterType) {
@@ -113,6 +113,9 @@ class SchExamParticipantController extends Controller
             ->addColumn('name', fn (ExamParticipant $participant) => $this->participantName($participant))
             ->addColumn('identifier', fn (ExamParticipant $participant) => $this->participantIdentifier($participant))
             ->addColumn('meta', fn (ExamParticipant $participant) => $this->participantMeta($participant))
+            ->addColumn('session', function (ExamParticipant $participant) {
+                return $participant->examSession ? $participant->examSession->subject->subject_name : '-';
+            })
             ->addColumn('action', function (ExamParticipant $participant) {
                 return '<button type="button" class="btn btn-outline-danger btn-sm remove-participant" data-id="' . $participant->id . '"><i class="fas fa-trash"></i> Hapus</button>';
             })
@@ -558,7 +561,7 @@ class SchExamParticipantController extends Controller
                         : ($attempt->participant->student_name ?? '-');
                 })
                 ->addColumn('subject_name', function ($attempt) {
-                    return $attempt->session->subject->subject_name ?? '-';
+                    return optional($attempt->session)->subject_display_name ?: '-';
                 })
                 ->addColumn('started_at_formatted', function ($attempt) {
                     return $attempt->started_at ? $attempt->started_at->format('d/m/Y H:i') : '-';

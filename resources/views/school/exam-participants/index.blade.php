@@ -145,6 +145,7 @@
         return ids;
     }
 
+
     function selectedRegisteredIds() {
         const ids = [];
         $('#participants-table').find('input.registered-select:checked').each(function () {
@@ -246,6 +247,7 @@
         });
     }
 
+
     function refreshTables() {
         const examId = currentExamId();
         if (!examId) {
@@ -309,6 +311,7 @@
             enableSaveButton();
             updateSelectAllState();
         });
+
 
         $('#participants-table').on('change', 'input.registered-select', function () {
             enableBulkDeleteButton();

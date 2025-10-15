@@ -83,6 +83,25 @@
         </div>
     </div>
 
+    {{-- Modal istirahat antar mata pelajaran --}}
+    <div class="modal fade" id="subjectBreakModal" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="subjectBreakLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="subjectBreakLabel"><i class="fas fa-fw fa-coffee"></i> Istirahat Sejenak</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-2">Anda telah menyelesaikan mata pelajaran <strong id="break-subject-name">-</strong>.</p>
+                    <p class="text-muted mb-3">Silakan manfaatkan waktu istirahat sebelum melanjutkan ke pelajaran berikutnya.</p>
+                    <div class="display-4 font-weight-bold" id="break-countdown">01:00</div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" id="break-continue-btn" disabled>Lanjutkan Ujian</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Modal konfirmasi selesai --}}
     <div class="modal fade" id="confirmFinishModal" data-backdrop="static" tabindex="-1" aria-labelledby="confirmFinishLabel">
         <div class="modal-dialog">
@@ -111,224 +130,429 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        $.ajaxSetup({
-            headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')}
-        });
+        (function ($) {
+            $.ajaxSetup({
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+            });
 
-        // Refresh daftar soal
-        function refreshQuestionList() {
-            $.get(@json(route('std.question.statuses', ['token' => $token, 'session' => $attempt->exam_session_id])))
-                .done(function(list) {
-                    const $wrap = $('#question-list-content').empty();
-                    const isArray = Array.isArray(list);
-                    const total = isArray ? list.length : parseInt($('#meta-answered-total').text(), 10) || 0;
-                    let answeredCount = 0;
-                    const currentIndex = parseInt($('#question-index').text(), 10);
-                    let currentStatus = null;
+            const subjectSegments = @json($subjectSegments);
+            const initialStatuses = @json($questionStatuses);
+            const questionStatusUrl = @json(route('std.question.statuses', ['token' => $token, 'session' => $attempt->exam_session_id]));
+            const fetchQuestionUrl = @json(route('std.question.fetch', ['token' => $token, 'session' => $attempt->exam_session_id]));
+            const saveAnswerUrl = @json(route('std.answer', ['token' => $token, 'session' => $attempt->exam_session_id]));
+            const finishUrl = @json(route('std.finish', ['token' => $token, 'session' => $attempt->exam_session_id]));
+            const csrfTokenValue = @json(csrf_token());
 
-                    (isArray ? list : []).forEach(function(item){
-                        if (item.answered) {
-                            answeredCount++;
-                        }
-                        if (item.order_index === currentIndex) {
-                            currentStatus = item;
-                        }
+            const subjectBreakModal = $('#subjectBreakModal');
+            const breakCountdownEl = $('#break-countdown');
+            const breakSubjectNameEl = $('#break-subject-name');
+            const breakContinueBtn = $('#break-continue-btn');
 
-                        const btnClass = item.flagged ? 'btn-warning' : (item.answered ? 'btn-success' : 'btn-secondary');
-                        const $btn = $('<button/>', {
-                            'class': 'btn '+btnClass+' m-1 question-goto',
-                            'data-index': item.order_index,
-                            'text': item.order_index,
-                            'title': item.flagged ? 'Ragu-ragu' : (item.answered ? 'Sudah dijawab' : 'Belum dijawab')
-                        });
-                        $wrap.append($btn);
-                    });
-
-                    if (isArray) {
-                        $('#meta-answered-current').text(answeredCount);
-                        $('#meta-answered-total').text(total);
-                    }
-
-                    const $statusBadge = $('#meta-status-badge');
-                    if ($statusBadge.length && currentStatus) {
-                        applyStatusBadge($statusBadge, currentStatus.flagged, currentStatus.answered);
-                    }
+            const indexToSubject = {};
+            const subjectState = subjectSegments.map((segment, idx) => {
+                const indexes = Array.isArray(segment.question_indexes)
+                    ? segment.question_indexes.slice()
+                    : [];
+                indexes.forEach(orderIndex => {
+                    indexToSubject[orderIndex] = idx;
                 });
-        }
 
-        function syncOptionCardSelection(context) {
-            const $ctx = context ? $(context) : $('#question-container');
-            $ctx.find('.option-card').each(function () {
-                const $card = $(this);
-                const $input = $card.find('.option-input');
-                if ($input.is(':checked')) {
-                    $card.addClass('is-selected');
-                } else {
-                    $card.removeClass('is-selected');
+                return {
+                    subjectId: segment.subject_id,
+                    name: segment.subject_name,
+                    questionIndexes: indexes,
+                    breakAfter: !!segment.break_after,
+                    breakDuration: segment.break_duration_seconds > 0 ? segment.break_duration_seconds : 60,
+                    completed: false,
+                    breakCompleted: !segment.break_after,
+                    answeredCount: 0,
+                };
+            });
+
+            let currentQuestionIndex = {{ (int) $index }};
+            if (currentQuestionIndex <= 0) {
+                currentQuestionIndex = parseInt($('#question-index').text(), 10) || 1;
+            }
+
+            let currentSubjectIndexState = typeof indexToSubject[currentQuestionIndex] !== 'undefined'
+                ? indexToSubject[currentQuestionIndex]
+                : {{ (int) $currentSubjectIndex }};
+            if (currentSubjectIndexState < 0) {
+                currentSubjectIndexState = 0;
+            }
+
+            let totalBreakSeconds = 0;
+            let activeBreak = null;
+            let breakIntervalHandle = null;
+
+            function pad(value) {
+                return value < 10 ? '0' + value : String(value);
+            }
+
+            function formatTime(seconds) {
+                const secs = Math.max(0, Math.floor(seconds));
+                const minutes = Math.floor(secs / 60);
+                const remainder = secs % 60;
+                return `${pad(minutes)}:${pad(remainder)}`;
+            }
+
+            function applyStatusBadge($badge, isFlagged, isAnswered) {
+                $badge.removeClass('badge-warning text-dark badge-success badge-secondary');
+                if (isFlagged) {
+                    $badge.addClass('badge-warning text-dark').text('Ditandai ragu-ragu');
+                    return;
+                }
+                if (isAnswered) {
+                    $badge.addClass('badge-success').text('Sudah dijawab');
+                    return;
+                }
+                $badge.addClass('badge-secondary').text('Belum dijawab');
+            }
+
+            function syncOptionCardSelection(context) {
+                const $ctx = context ? $(context) : $('#question-container');
+                $ctx.find('.option-card').each(function () {
+                    const $card = $(this);
+                    const $input = $card.find('.option-input');
+                    $card.toggleClass('is-selected', $input.is(':checked'));
+                });
+            }
+
+            function updateSubjectStateFromStatuses(statuses) {
+                if (!Array.isArray(statuses) || !subjectState.length) {
+                    return;
+                }
+
+                const answeredMap = {};
+                statuses.forEach(item => {
+                    answeredMap[item.order_index] = !!item.answered;
+                });
+
+                subjectState.forEach(state => {
+                    const total = state.questionIndexes.length;
+                    let answered = 0;
+                    state.questionIndexes.forEach(orderIndex => {
+                        if (answeredMap[orderIndex]) {
+                            answered++;
+                        }
+                    });
+                    state.answeredCount = answered;
+                    state.completed = total > 0 && answered >= total;
+                });
+            }
+
+            function fetchQuestionStatuses(updateUI = true) {
+                const request = $.get(questionStatusUrl);
+
+                return request.done(function (list) {
+                    const statuses = Array.isArray(list) ? list : [];
+
+                    if (updateUI) {
+                        const $wrap = $('#question-list-content').empty();
+                        const currentIndex = parseInt($('#question-index').text(), 10);
+                        let currentStatus = null;
+                        let answeredCount = 0;
+
+                        statuses.forEach(function (item) {
+                            if (item.answered) {
+                                answeredCount++;
+                            }
+                            if (item.order_index === currentIndex) {
+                                currentStatus = item;
+                            }
+
+                            const btnClass = item.flagged
+                                ? 'btn-warning'
+                                : (item.answered ? 'btn-success' : 'btn-secondary');
+
+                            $('<button/>', {
+                                'class': 'btn ' + btnClass + ' m-1 question-goto',
+                                'data-index': item.order_index,
+                                'text': item.order_index,
+                                'title': item.flagged ? 'Ragu-ragu' : (item.answered ? 'Sudah dijawab' : 'Belum dijawab')
+                            }).appendTo($wrap);
+                        });
+
+                        if (statuses.length) {
+                            $('#meta-answered-current').text(answeredCount);
+                            $('#meta-answered-total').text(statuses.length);
+                        }
+
+                        const $statusBadge = $('#meta-answer-status');
+                        if ($statusBadge.length && currentStatus) {
+                            applyStatusBadge($statusBadge, currentStatus.flagged, currentStatus.answered);
+                        }
+                    }
+
+                    updateSubjectStateFromStatuses(statuses);
+                });
+            }
+
+            function refreshQuestionList() {
+                fetchQuestionStatuses(true);
+            }
+
+            function loadQuestion(index) {
+                $.get(fetchQuestionUrl, { q: index })
+                    .done(function (res) {
+                        if (res.redirect) {
+                            window.location.href = res.redirect;
+                            return;
+                        }
+
+                        $('#question-container').html(res.html);
+                        $('#question-index').text(res.index);
+                        $('#question-total').text(res.total);
+
+                        currentQuestionIndex = parseInt(res.index, 10) || currentQuestionIndex;
+                        if (typeof indexToSubject[currentQuestionIndex] !== 'undefined') {
+                            currentSubjectIndexState = indexToSubject[currentQuestionIndex];
+                        }
+
+                        syncOptionCardSelection('#question-container');
+                        refreshQuestionList();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+            }
+
+            function shouldTriggerBreak(targetIndex) {
+                if (!subjectState.length) {
+                    return false;
+                }
+
+                const targetSubjectIdx = indexToSubject[targetIndex];
+                if (typeof targetSubjectIdx === 'undefined') {
+                    return false;
+                }
+                if (targetSubjectIdx === currentSubjectIndexState) {
+                    return false;
+                }
+                if (targetSubjectIdx < currentSubjectIndexState) {
+                    return false;
+                }
+
+                const currentState = subjectState[currentSubjectIndexState];
+                if (!currentState || !currentState.breakAfter) {
+                    return false;
+                }
+                if (currentState.breakCompleted) {
+                    return false;
+                }
+                return currentState.completed;
+            }
+
+            function tickBreakCountdown() {
+                if (!activeBreak) {
+                    if (breakIntervalHandle) {
+                        clearInterval(breakIntervalHandle);
+                        breakIntervalHandle = null;
+                    }
+                    return;
+                }
+
+                const elapsed = Math.floor((Date.now() - activeBreak.startedAt) / 1000);
+                const remaining = Math.max(0, activeBreak.duration - elapsed);
+                breakCountdownEl.text(formatTime(remaining));
+
+                if (remaining <= 0) {
+                    if (breakIntervalHandle) {
+                        clearInterval(breakIntervalHandle);
+                        breakIntervalHandle = null;
+                    }
+                    breakContinueBtn.prop('disabled', false);
+                    activeBreak.ready = true;
+                }
+            }
+
+            function startBreak(nextIndex) {
+                const currentState = subjectState[currentSubjectIndexState];
+                if (!currentState) {
+                    loadQuestion(nextIndex);
+                    return;
+                }
+                if (activeBreak) {
+                    return;
+                }
+
+                const duration = currentState.breakDuration > 0 ? currentState.breakDuration : 60;
+                activeBreak = {
+                    segmentIndex: currentSubjectIndexState,
+                    duration: duration,
+                    nextIndex: nextIndex,
+                    startedAt: Date.now(),
+                    ready: false
+                };
+
+                breakSubjectNameEl.text(currentState.name || 'Pelajaran berikutnya');
+                breakCountdownEl.text(formatTime(duration));
+                breakContinueBtn.prop('disabled', true);
+                subjectBreakModal.modal('show');
+
+                if (breakIntervalHandle) {
+                    clearInterval(breakIntervalHandle);
+                }
+                breakIntervalHandle = setInterval(tickBreakCountdown, 1000);
+                tickBreakCountdown();
+            }
+
+            function endBreak() {
+                if (!activeBreak || !activeBreak.ready) {
+                    return;
+                }
+
+                if (breakIntervalHandle) {
+                    clearInterval(breakIntervalHandle);
+                    breakIntervalHandle = null;
+                }
+
+                const { duration, nextIndex, segmentIndex } = activeBreak;
+                const state = subjectState[segmentIndex];
+                if (state) {
+                    state.breakCompleted = true;
+                }
+                totalBreakSeconds += duration;
+                subjectBreakModal.modal('hide');
+                activeBreak = null;
+                navigateToQuestion(nextIndex, { force: true });
+            }
+
+            function navigateToQuestion(index, options = {}) {
+                const force = !!options.force;
+
+                if (activeBreak && !force) {
+                    return;
+                }
+
+                if (!force && shouldTriggerBreak(index)) {
+                    startBreak(index);
+                    return;
+                }
+
+                loadQuestion(index);
+            }
+
+            function ensureLatestStatuses() {
+                if (!subjectState.length) {
+                    return $.Deferred().resolve().promise();
+                }
+                return fetchQuestionStatuses(false);
+            }
+
+            function serializeAnswer(formArray, actionValue, includeNavigation) {
+                const data = formArray.filter(item => item.name !== 'action');
+                data.push({ name: 'action', value: actionValue });
+
+                if (!includeNavigation && (actionValue === 'save' || actionValue === 'save-multi')) {
+                    return data.filter(item => item.name !== 'goto-index');
+                }
+
+                return data;
+            }
+
+            function autoSaveAnswer(action) {
+                const $form = $('#question-container form');
+                if ($form.length === 0) return;
+
+                const formData = serializeAnswer($form.serializeArray(), action, false);
+
+                if (window.__autoSaveRequest) {
+                    window.__autoSaveRequest.abort();
+                }
+
+                window.__autoSaveRequest = $.post(saveAnswerUrl, formData)
+                    .done(function () {
+                        refreshQuestionList();
+                    })
+                    .always(function () {
+                        window.__autoSaveRequest = null;
+                    });
+            }
+
+            $(document).on('change', '#question-container .option-card .option-input', function () {
+                const $input = $(this);
+                const $card = $input.closest('.option-card');
+                if ($input.attr('type') === 'radio') {
+                    const name = $input.attr('name');
+                    $card.closest('.option-grid').find(`input[name="${name}"]`).each(function () {
+                        $(this).closest('.option-card').removeClass('is-selected');
+                    });
+                }
+                $card.toggleClass('is-selected', $input.is(':checked'));
+                autoSaveAnswer($input.attr('type') === 'checkbox' ? 'save-multi' : 'save');
+            });
+
+            $(document).on('change', '#question-container select[name^="matching"]', function () {
+                autoSaveAnswer('save');
+            });
+
+            $(document).on('change', '#question-container input[name^="tf\\["]', function () {
+                autoSaveAnswer('save');
+            });
+
+            $(document).on('click', '#question-container button[name="action"]', function () {
+                const $form = $(this).closest('form');
+                $form.data('last-action', $(this).val());
+                $form.data('goto-index', $(this).data('next-index') || null);
+            });
+
+            $(document).on('submit', '#question-container form', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const lastAction = $form.data('last-action') || 'next';
+                const gotoIndexFromBtn = $form.data('goto-index');
+
+                const formData = serializeAnswer($form.serializeArray(), lastAction, true);
+
+                $.post(saveAnswerUrl, formData)
+                    .done(function (res) {
+                        const currentIndex = parseInt($('#question-index').text(), 10);
+                        const total = parseInt($('#question-total').text(), 10);
+
+                        let target = res && res.index ? parseInt(res.index, 10) : NaN;
+                        if (Number.isNaN(target) && gotoIndexFromBtn) {
+                            target = parseInt(gotoIndexFromBtn, 10);
+                        }
+                        if (Number.isNaN(target)) {
+                            if (lastAction === 'next' && currentIndex < total) target = currentIndex + 1;
+                            if (lastAction === 'prev' && currentIndex > 1) target = currentIndex - 1;
+                            if (lastAction === 'flag') target = currentIndex;
+                        }
+                        if (Number.isNaN(target) || target <= 0) {
+                            target = currentIndex;
+                        }
+
+                        ensureLatestStatuses().always(function () {
+                            navigateToQuestion(target);
+                        });
+                    });
+            });
+
+            $('#questionListModal').on('show.bs.modal', refreshQuestionList);
+            $(document).on('click', '.question-goto', function () {
+                $('#questionListModal').modal('hide');
+                const target = parseInt($(this).data('index'), 10);
+                if (!Number.isNaN(target)) {
+                    ensureLatestStatuses().always(function () {
+                        navigateToQuestion(target);
+                    });
                 }
             });
-        }
 
-        function applyStatusBadge($badge, isFlagged, isAnswered) {
-            $badge.removeClass('badge-warning text-dark badge-success badge-secondary');
+            $(document).on('click', '.btn-finish-modal', function () {
+                $('#confirmFinishModal').modal('show');
+            });
 
-            if (isFlagged) {
-                $badge.addClass('badge-warning text-dark');
-                $badge.text('Ditandai ragu-ragu');
-                $badge.attr('data-flagged', '1');
-                $badge.attr('data-answered', isAnswered ? '1' : '0');
-                return;
-            }
-
-            if (isAnswered) {
-                $badge.addClass('badge-success');
-                $badge.text('Sudah dijawab');
-                $badge.attr('data-flagged', '0');
-                $badge.attr('data-answered', '1');
-                return;
-            }
-
-            $badge.addClass('badge-secondary');
-            $badge.text('Belum dijawab');
-            $badge.attr('data-flagged', '0');
-            $badge.attr('data-answered', '0');
-        }
-
-        function loadQuestion(index) {
-            $.get(@json(route('std.question.fetch', ['token' => $token, 'session' => $attempt->exam_session_id])), { q: index })
-                .done(function(res){
-                    if (res.redirect) return window.location.href = res.redirect;
-                    $('#question-container').html(res.html);
-                    $('#question-index').text(res.index);
-                    $('#question-total').text(res.total);
-                    syncOptionCardSelection('#question-container');
-                    refreshQuestionList();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-        }
-
-        // Modal daftar soal
-        $('#questionListModal').on('show.bs.modal', refreshQuestionList);
-        $(document).on('click', '.question-goto', function(){
-            $('#questionListModal').modal('hide');
-            loadQuestion($(this).data('index'));
-        });
-
-        // Visual feedback untuk pilihan + auto save
-        $(document).on('change', '#question-container .option-card .option-input', function(){
-            const $input = $(this);
-            const $card = $input.closest('.option-card');
-            if ($input.attr('type') === 'radio') {
-                const name = $input.attr('name');
-                $card.closest('.option-grid').find(`input[name="${name}"]`).each(function(){
-                    $(this).closest('.option-card').removeClass('is-selected');
-                });
-            }
-            $card.toggleClass('is-selected', $input.is(':checked'));
-
-            autoSaveAnswer($input.attr('type') === 'checkbox' ? 'save-multi' : 'save');
-        });
-
-        $(document).on('change', '#question-container select[name^="matching"]', function(){
-            autoSaveAnswer('save');
-        });
-
-        $(document).on('change', '#question-container input[name^="tf\\["]', function(){
-            autoSaveAnswer('save');
-        });
-
-        // Submit jawaban via AJAX
-        // Klik tombol navigasi: simpan aksi + index tujuan
-        $(document).on('click', '#question-container button[name="action"]', function(){
-            const $form = $(this).closest('form');
-            $form.data('last-action', $(this).val());
-            $form.data('goto-index', $(this).data('next-index') || null); // ambil dari atribut data
-        });
-
-        // Submit form jawaban via AJAX
-        $(document).on('submit', '#question-container form', function(e){
-            e.preventDefault();
-            const $form = $(this);
-            const lastAction = $form.data('last-action') || 'next';
-            const gotoIndexFromBtn = $form.data('goto-index');
-
-            // serialize data form + tambahkan action
-            const formData = serializeAnswer($form.serializeArray(), lastAction, true);
-
-            $.post(@json(route('std.answer', ['token' => $token, 'session' => $attempt->exam_session_id])), formData)
-                .done(function(res){
-                    const currentIndex = parseInt($('#question-index').text(), 10);
-                    const total = parseInt($('#question-total').text(), 10);
-
-                    let target = null;
-
-                    // 1) Prioritaskan index dari server
-                    if (res && res.index) {
-                        target = res.index;
-                    }
-
-                    // 2) Kalau server tidak kirim index, pakai dari tombol
-                    if (!target && gotoIndexFromBtn) {
-                        target = parseInt(gotoIndexFromBtn, 10);
-                    }
-
-                    // 3) Fallback terakhir: hitung manual
-                    if (!target) {
-                        if (lastAction === 'next' && currentIndex < total) target = currentIndex + 1;
-                        if (lastAction === 'prev' && currentIndex > 1) target = currentIndex - 1;
-                        if (lastAction === 'flag') target = currentIndex;
-                    }
-
-                    // Kalau target tidak valid, pakai current
-                    if (!target) target = currentIndex;
-
-                    loadQuestion(target);
-                });
-        });
-
-
-        // Timer
-        (function() {
-            const timerEl = document.getElementById('timer');
-            const durationMinutes = {{ (int) ($session->session_duration ?? 0) }};
-            const startedAtSec = {{ optional($attempt->started_at)->timestamp ?? now()->timestamp }};
-            const startedAt = startedAtSec * 1000;
-            const finishForm = $('<form>', {method:'POST', action:@json(route('std.finish', ['token' => $token, 'session' => $attempt->exam_session_id]))})
-                .append($('<input>', {type:'hidden', name:'_token', value:@json(csrf_token())}))
-                .append($('<input>', {type:'hidden', name:'force', value:'1'}))
-                .appendTo('body');
-
-            function pad(n){return n<10? '0'+n : n}
-            function tick(){
-                const now = Date.now();
-                const elapsed = Math.floor((now - startedAt)/1000);
-                const remain = Math.max(0, durationMinutes*60 - elapsed);
-                const h = Math.floor(remain/3600);
-                const m = Math.floor((remain%3600)/60);
-                const s = remain%60;
-                if (timerEl) timerEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
-                if (remain <= 0) {
-                    clearInterval(intv);
-                    finishForm[0].submit();
-                }
-            }
-            const intv = setInterval(tick, 1000); tick();
-        })();
-
-        // Modal finish
-        $(document).on('click', '.btn-finish-modal', () => $('#confirmFinishModal').modal('show'));
-        $(document).on('submit', '#confirmFinishModal form', function(e){
-            e.preventDefault();
-            const formEl = this;
-            $.get(@json(route('std.question.statuses', ['token' => $token, 'session' => $attempt->exam_session_id])))
-                .done(function(list){
-                    const statuses = list || [];
+            $(document).on('submit', '#confirmFinishModal form', function (e) {
+                e.preventDefault();
+                const formEl = this;
+                fetchQuestionStatuses(false).done(function (list) {
+                    const statuses = Array.isArray(list) ? list : [];
                     const unanswered = statuses.filter(item => !item.answered);
                     const flagged = statuses.filter(item => !!item.flagged);
 
-                    const goToQuestion = index => {
+                    const goToQuestionFn = index => {
                         $('#confirmFinishModal').modal('hide');
-                        loadQuestion(index);
+                        navigateToQuestion(index, { force: true });
                     };
 
                     if (unanswered.length > 0) {
@@ -338,7 +562,7 @@
                             text: 'Selesaikan terlebih dahulu soal yang belum dijawab.',
                             icon: 'warning',
                             confirmButtonText: 'Ke soal yang belum dijawab'
-                        }).then(() => goToQuestion(unanswered[0].order_index));
+                        }).then(() => goToQuestionFn(unanswered[0].order_index));
                         return;
                     }
 
@@ -355,7 +579,7 @@
                             if (result.isConfirmed) {
                                 formEl.submit();
                             } else if (result.dismiss === Swal.DismissReason.cancel) {
-                                goToQuestion(flagged[0].order_index);
+                                goToQuestionFn(flagged[0].order_index);
                             }
                         });
                         return;
@@ -363,44 +587,61 @@
 
                     formEl.submit();
                 });
-        });
+            });
 
-        function serializeAnswer(formArray, actionValue, includeNavigation){
-            const data = formArray.filter(item => item.name !== 'action');
-            data.push({name: 'action', value: actionValue});
+            breakContinueBtn.on('click', function () {
+                endBreak();
+            });
 
-            if (!includeNavigation && (actionValue === 'save' || actionValue === 'save-multi')) {
-                // Ensure we don't send navigation extras when autosaving
-                return data.filter(item => item.name !== 'goto-index');
-            }
+            (function initTimer() {
+                const timerEl = document.getElementById('timer');
+                const durationMinutes = {{ (int) ($session->session_duration ?? 0) }};
+                const startedAtSec = {{ optional($attempt->started_at)->timestamp ?? now()->timestamp }};
+                const startedAt = startedAtSec * 1000;
 
-            return data;
-        }
+                const finishForm = $('<form>', { method: 'POST', action: finishUrl })
+                    .append($('<input>', { type: 'hidden', name: '_token', value: csrfTokenValue }))
+                    .append($('<input>', { type: 'hidden', name: 'force', value: '1' }))
+                    .appendTo('body');
 
-        function autoSaveAnswer(action){
-            const $form = $('#question-container form');
-            if ($form.length === 0) return;
+                function tick() {
+                    const now = Date.now();
+                    const elapsedSeconds = Math.floor((now - startedAt) / 1000);
+                    let adjustedElapsed = elapsedSeconds - totalBreakSeconds;
 
-            const formData = serializeAnswer($form.serializeArray(), action, false);
-
-            if (window.__autoSaveRequest) {
-                window.__autoSaveRequest.abort();
-            }
-
-            window.__autoSaveRequest = $.post(@json(route('std.answer', ['token' => $token, 'session' => $attempt->exam_session_id])), formData)
-                .done(function(res){
-                    if (res && res.index) {
-                        $('#question-index').text(res.index);
+                    if (activeBreak) {
+                        const breakElapsed = Math.min(activeBreak.duration, Math.floor((now - activeBreak.startedAt) / 1000));
+                        adjustedElapsed -= breakElapsed;
                     }
-                    refreshQuestionList();
-                })
-                .always(function(){
-                    window.__autoSaveRequest = null;
-                });
-        }
 
-        // Sinkronkan tampilan pilihan saat halaman pertama kali dimuat
-        syncOptionCardSelection('#question-container');
+                    if (adjustedElapsed < 0) {
+                        adjustedElapsed = 0;
+                    }
+
+                    const remain = Math.max(0, durationMinutes * 60 - adjustedElapsed);
+                    const hours = Math.floor(remain / 3600);
+                    const minutes = Math.floor((remain % 3600) / 60);
+                    const seconds = remain % 60;
+
+                    if (timerEl) {
+                        timerEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                    }
+
+                    if (remain <= 0) {
+                        clearInterval(timerInterval);
+                        finishForm[0].submit();
+                    }
+                }
+
+                const timerInterval = setInterval(tick, 1000);
+                tick();
+            })();
+
+            syncOptionCardSelection('#question-container');
+            if (Array.isArray(initialStatuses)) {
+                updateSubjectStateFromStatuses(initialStatuses);
+            }
+        })(jQuery);
     </script>
 </body>
 </html>

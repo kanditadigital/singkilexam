@@ -19,7 +19,6 @@
                     <thead>
                         <tr>
                             <th>No.</th>
-                            <th>Kategori Soal</th>
                             <th>Tipe Soal</th>
                             <th>Pertanyaan</th>
                             <th>Opsi</th>
@@ -54,7 +53,6 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'question_category', name: 'question_category' },
                     { data: 'question_type', name: 'question_type' },
                     {
                         data: 'question_text',

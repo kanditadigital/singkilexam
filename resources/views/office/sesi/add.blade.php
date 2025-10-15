@@ -33,25 +33,40 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="form-group row">
-                        <div class="col-md-6">
-                            <label for="subject_name">Mata Pelajaran <span class="text-danger">*</span></label>
-                            <select name="subject_id" id="subject_id" class="form-control custom-select @error('subject_id') is-invalid @enderror" required>
-                                <option value="">Pilih Mata Pelajaran</option>
-                                @foreach($subjects as $subject)
-                                    <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>{{ $subject->subject_name }}</option>
-                                @endforeach
-                            </select>
-                            @error('subject_name')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
+                    <div class="form-group">
+                        <label>Konfigurasi Mata Pelajaran</label>
+                        <div id="subjects-container">
+                            <div class="subject-row mb-3 p-3 border rounded">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <label>Mata Pelajaran</label>
+                                        <select name="subjects[0][subject_id]" class="form-control custom-select subject-select" required>
+                                            <option value="">Pilih Mata Pelajaran</option>
+                                            @foreach($subjects as $subject)
+                                                <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Jumlah Soal</label>
+                                        <input type="number" name="subjects[0][question_count]" class="form-control question-count" placeholder="Jumlah soal" min="1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Durasi (menit)</label>
+                                        <input type="number" name="subjects[0][duration]" class="form-control subject-duration" placeholder="Durasi" min="1" required>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger remove-subject" style="display: none;"><i class="fas fa-trash"></i></button>
+                                        <button type="button" class="btn btn-success add-subject ml-2"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="duration">Durasi (menit) <span class="text-danger">*</span></label>
-                            <input type="number" name="session_duration" id="session_duration" class="form-control @error('session_duration') is-invalid @enderror" value="{{ old('session_duration') }}" placeholder="Masukkan durasi dalam menit" required>
-                            @error('session_duration')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-12">
+                            <label for="break_duration">Jeda Antar Mapel (menit)</label>
+                            <input type="number" name="break_duration" id="break_duration" class="form-control" value="{{ old('break_duration', 1) }}" placeholder="Jeda dalam menit" min="0">
                         </div>
                     </div>
                     <div class="form-group row">
@@ -133,4 +148,95 @@
             </div>
         </div>
     </div>
+
+    <script>
+        let subjectIndex = 1;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('add-subject') || e.target.closest('.add-subject')) {
+                    addSubjectRow();
+                }
+
+                if (e.target.classList.contains('remove-subject') || e.target.closest('.remove-subject')) {
+                    removeSubjectRow(e.target.closest('.subject-row'));
+                }
+            });
+
+            function addSubjectRow() {
+                const container = document.getElementById('subjects-container');
+                const newRow = createSubjectRow(subjectIndex);
+                container.appendChild(newRow);
+                subjectIndex++;
+
+                // Show remove buttons if more than one row
+                updateRemoveButtons();
+            }
+
+            function removeSubjectRow(row) {
+                row.remove();
+                updateRemoveButtons();
+                reindexSubjects();
+            }
+
+            function createSubjectRow(index) {
+                const row = document.createElement('div');
+                row.className = 'subject-row mb-3 p-3 border rounded';
+
+                const subjects = @json($subjects);
+
+                row.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-5">
+                            <label>Mata Pelajaran</label>
+                            <select name="subjects[${index}][subject_id]" class="form-control custom-select subject-select" required>
+                                <option value="">Pilih Mata Pelajaran</option>
+                                ${subjects.map(subject => `<option value="${subject.id}">${subject.subject_name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Jumlah Soal</label>
+                            <input type="number" name="subjects[${index}][question_count]" class="form-control question-count" placeholder="Jumlah soal" min="1" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Durasi (menit)</label>
+                            <input type="number" name="subjects[${index}][duration]" class="form-control subject-duration" placeholder="Durasi" min="1" required>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger remove-subject"><i class="fas fa-trash"></i></button>
+                            <button type="button" class="btn btn-success add-subject ml-2"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                `;
+
+                return row;
+            }
+
+            function updateRemoveButtons() {
+                const rows = document.querySelectorAll('.subject-row');
+                const removeButtons = document.querySelectorAll('.remove-subject');
+
+                if (rows.length > 1) {
+                    removeButtons.forEach(btn => btn.style.display = 'inline-block');
+                } else {
+                    removeButtons.forEach(btn => btn.style.display = 'none');
+                }
+            }
+
+            function reindexSubjects() {
+                const rows = document.querySelectorAll('.subject-row');
+                rows.forEach((row, index) => {
+                    const select = row.querySelector('.subject-select');
+                    const input = row.querySelector('.question-count');
+
+                    if (select) select.name = `subjects[${index}][subject_id]`;
+                    if (input) input.name = `subjects[${index}][question_count]`;
+                });
+                subjectIndex = rows.length;
+            }
+
+            // Initialize
+            updateRemoveButtons();
+        });
+    </script>
 @endsection

@@ -11,8 +11,9 @@
                             <p class="text-muted mb-2">Terima kasih telah berpartisipasi dalam ujian ini</p>
                         </div>
                         <hr>
-                        @if(optional($attempt->session->subject)->subject_name)
-                            <h4>{{ $attempt->session->subject->subject_name }}</h4>
+                        @php $subjectLabel = optional($attempt->session)->subject_display_name; @endphp
+                        @if(!empty($subjectLabel))
+                            <h4>{{ $subjectLabel }}</h4>
                         @endif
                         @if($grade)
                             @php

@@ -12,9 +12,11 @@ use App\Models\ExamSession;
 use App\Models\ExamAttempt;
 use App\Models\ExamAttemptQuestion;
 use App\Models\Question;
+use App\Models\Subject;
 use App\Models\ExamGrade;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\ExamCacheService;
 use Illuminate\Support\Collection;
 
@@ -75,6 +77,157 @@ class ExamController extends Controller
         return $query;
     }
 
+    private function collectSessionQuestions(ExamSession $session): Collection
+    {
+        $questions = collect();
+        $subjectConfigs = collect($session->session_subjects ?? []);
+
+        if ($subjectConfigs->isNotEmpty()) {
+            $subjectIds = $subjectConfigs
+                ->pluck('subject_id')
+                ->filter()
+                ->map(static fn($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            $subjects = Subject::with('questions.questionOptions')
+                ->whereIn('id', $subjectIds)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($subjectConfigs as $config) {
+                $subjectId = (int) ($config['subject_id'] ?? 0);
+                if ($subjectId <= 0) {
+                    continue;
+                }
+
+                $subject = $subjects->get($subjectId);
+                if (!$subject) {
+                    continue;
+                }
+
+                $subjectQuestions = $subject->questions->values();
+                $limit = (int) ($config['question_count'] ?? 0);
+
+                if ($session->random_question === 'Y') {
+                    $subjectQuestions = $subjectQuestions->shuffle()->values();
+                }
+
+                if ($limit > 0 && $subjectQuestions->count() > $limit) {
+                    $subjectQuestions = $subjectQuestions->take($limit)->values();
+                }
+
+                foreach ($subjectQuestions as $question) {
+                    $question->setRelation('subject', $subject);
+                }
+
+                $questions = $questions->merge($subjectQuestions);
+            }
+
+            return $questions->values();
+        }
+
+        $fallbackSubject = $session->subject;
+        if ($fallbackSubject) {
+            $fallbackSubject->loadMissing('questions.questionOptions');
+            $fallbackQuestions = $fallbackSubject->questions->values();
+
+            if ($session->random_question === 'Y') {
+                $fallbackQuestions = $fallbackQuestions->shuffle()->values();
+            }
+
+            foreach ($fallbackQuestions as $question) {
+                $question->setRelation('subject', $fallbackSubject);
+            }
+
+            return $fallbackQuestions;
+        }
+
+        return collect();
+    }
+
+    private function resolveSubjectIndexForQuestion(array $segments, int $orderIndex): int
+    {
+        foreach ($segments as $idx => $segment) {
+            if ($orderIndex >= $segment['start_index'] && $orderIndex <= $segment['end_index']) {
+                return $idx;
+            }
+        }
+
+        return 0;
+    }
+
+    private function buildSubjectSegments(ExamAttempt $attempt, ExamSession $session): array
+    {
+        $segments = [];
+
+        $questionCollection = $attempt->questions()
+            ->with('question.subject')
+            ->orderBy('order_index')
+            ->get();
+
+        if ($questionCollection->isEmpty()) {
+            return $segments;
+        }
+
+        $configurations = collect($session->session_subjects ?? []);
+        $durationMap = $configurations
+            ->filter(fn($config) => isset($config['subject_id']))
+            ->mapWithKeys(function ($config) {
+                $subjectId = (int) $config['subject_id'];
+                $duration = isset($config['duration']) ? (int) $config['duration'] : null;
+                $questionCount = isset($config['question_count']) ? (int) $config['question_count'] : null;
+                return [$subjectId => [
+                    'duration' => $duration,
+                    'question_count' => $questionCount,
+                ]];
+            });
+
+        foreach ($questionCollection as $attemptQuestion) {
+            $subject = optional($attemptQuestion->question)->subject;
+            $subjectId = $subject?->id;
+            if (!$subjectId) {
+                continue;
+            }
+
+            $currentSegmentIndex = count($segments) - 1;
+            $isContinuation = $currentSegmentIndex >= 0
+                && $segments[$currentSegmentIndex]['subject_id'] === $subjectId;
+
+            if (!$isContinuation) {
+                $meta = $durationMap->get($subjectId, ['duration' => null, 'question_count' => null]);
+
+                $segments[] = [
+                    'subject_id' => $subjectId,
+                    'subject_name' => $subject->subject_name ?? '-',
+                    'start_index' => $attemptQuestion->order_index,
+                    'end_index' => $attemptQuestion->order_index,
+                    'question_indexes' => [$attemptQuestion->order_index],
+                    'question_count' => 1,
+                    'target_question_count' => $meta['question_count'],
+                    'duration_minutes' => $meta['duration'],
+                ];
+                continue;
+            }
+
+            $segment =& $segments[$currentSegmentIndex];
+            $segment['end_index'] = $attemptQuestion->order_index;
+            $segment['question_indexes'][] = $attemptQuestion->order_index;
+            $segment['question_count']++;
+        }
+
+        $configuredBreakSeconds = max(0, (int) ($session->break_duration ?? 0)) * 60;
+        $effectiveBreakSeconds = $configuredBreakSeconds > 0 ? $configuredBreakSeconds : 60;
+        $segmentCount = count($segments);
+        foreach ($segments as $idx => &$segment) {
+            $segment['break_after'] = $segmentCount > 1 && $idx < ($segmentCount - 1);
+            $segment['break_duration_seconds'] = $segment['break_after'] ? $effectiveBreakSeconds : 0;
+        }
+        unset($segment);
+
+        return $segments;
+    }
+
     /**
      * Cek Data Peserta dan Token
      * @return \Illuminate\Http\Response
@@ -82,6 +235,13 @@ class ExamController extends Controller
     public function index()
     {
         $participant = $this->resolveParticipant();
+
+        Log::info('Participant data in confirmation page', [
+            'guard' => $participant['guard'],
+            'id' => $participant['id'],
+            'name' => $participant['name'],
+            'class' => $participant['class'],
+        ]);
 
         $sessionQuery = ExamSession::with(['exam', 'subject'])
             ->orderBy('session_start_time');
@@ -91,13 +251,32 @@ class ExamController extends Controller
 
         $examIds = $this->participantExamIds($participant);
 
+        Log::info('Exam IDs for participant', ['examIds' => $examIds->toArray()]);
+
         if ($examIds->isNotEmpty()) {
             $sessionQuery->whereIn('exam_id', $examIds);
-            $activeSessions = (clone $sessionQuery)->where('session_status', 'Active')->get();
-            $availableSessions = $activeSessions->isNotEmpty()
-                ? $activeSessions
-                : $sessionQuery->get();
+
+            $availableSessions = $sessionQuery->get();
+
+            $activeSessions = $availableSessions->where('session_status', 'Active');
+
+            Log::info('Participant sessions', [
+                'total_sessions' => $availableSessions->count(),
+                'sessions' => $availableSessions->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'exam_id' => $s->exam_id,
+                        'exam_name' => $s->exam->exam_name ?? 'N/A',
+                        'subject_names' => $s->subject_display_name,
+                        'session_status' => $s->session_status,
+                        'session_number' => $s->session_number,
+                        'duration' => $s->session_duration,
+                    ];
+                })->toArray()
+            ]);
         }
+
+        Log::info('Available sessions count', ['count' => $availableSessions->count()]);
 
         // Check for ongoing in_progress attempt
         $ongoingAttempt = ExamAttempt::with(['exam', 'session.subject'])
@@ -239,11 +418,7 @@ class ExamController extends Controller
         }
 
         if ($attempt->questions()->count() === 0) {
-            $questions = optional($session->subject)->questions ?? collect();
-
-            if ($session->random_question === 'Y') {
-                $questions = $questions->shuffle();
-            }
+            $questions = $this->collectSessionQuestions($session);
 
             DB::transaction(function () use ($attempt, $questions, $session) {
                 foreach ($questions as $idx => $question) {
@@ -286,6 +461,8 @@ class ExamController extends Controller
 
         $answeredCount = $this->cacheService()->getAnsweredCount($attempt);
         $statuses = $this->cacheService()->getStatuses($attempt);
+        $subjectSegments = $this->buildSubjectSegments($attempt, $session);
+        $currentSubjectIndex = $this->resolveSubjectIndexForQuestion($subjectSegments, $index);
 
         return view('std.exam', [
             'title' => 'Exam',
@@ -300,6 +477,8 @@ class ExamController extends Controller
             'questionStatuses' => $statuses,
             'participant' => $participant,
             'participantLabel' => $participant['guard'] === 'students' ? 'Siswa' : 'Guru/Staff',
+            'subjectSegments' => $subjectSegments,
+            'currentSubjectIndex' => $currentSubjectIndex,
         ]);
     }
 

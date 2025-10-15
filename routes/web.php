@@ -120,6 +120,9 @@ Route::prefix('disdik')->name('disdik.')->middleware('auth:web')->group(function
     // Get school/siswa by branch
     Route::get('schools/by-branch/{branchId}', [PegawaiController::class, 'getByBranch'])->name('pegawai.getByBranch');
     Route::get('siswa/by-branch/{branchId}', [SiswaController::class, 'getByBranch'])->name('siswa.getByBranch');
+
+    // Get sessions by exam
+    Route::get('sesi/by-exam/{examId}', [SesiController::class, 'getByExam'])->name('sesi.by-exam')->withoutMiddleware('auth:web');
 });
 
 

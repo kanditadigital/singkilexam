@@ -93,7 +93,6 @@ class SoalController extends Controller
                 'subject_id' => $request->subject_id,
                 'question_text' => $request->question_text,
                 'question_type' => $request->question_type,
-                'question_category' => $request->question_category,
                 'question_format' => $request->question_format,
                 'option_format' => $request->option_format ?? 'text',
                 'question_image' => $questionImagePath,
@@ -167,7 +166,6 @@ class SoalController extends Controller
             'subject_id' => $request->subject_id ?? $question->subject_id,
             'question_text' => $request->question_text,
             'question_type' => $request->question_type,
-            'question_category' => $request->question_category,
             'question_format' => $request->question_format,
             'option_format' => $request->option_format ?? 'text',
             'question_image' => $questionImagePath,
@@ -199,7 +197,6 @@ class SoalController extends Controller
 
         $rules = [
             'subject_id' => 'required',
-            'question_category' => 'required',
             'question_type' => 'required|in:multiple_choice,true_false,multiple_response,tkp,matching',
             'question_format' => 'required|in:text,image,text_image',
         ];

@@ -35,10 +35,9 @@
                                 @foreach ($sessions as $sessionItem)
                                     <div class="list-group-item flex-column align-items-start">
                                         <div class="d-flex w-100 justify-content-between">
-                                            <h5 class="mb-1">{{ $sessionItem->subject->subject_name ?? '-' }}</h5>
+                                            <h5 class="mb-1">{{ $sessionItem->exam->exam_name ?? '-' }} <div class="badge bg-danger text-white px-3 py-2">{{ $sessionItem->exam->exam_code ?? '-' }}</div></h5>
                                             <small class="text-muted">{{ $sessionItem->session_number }}</small>
                                         </div>
-                                        <p class="mb-1">Ujian: {{ $sessionItem->exam->exam_name ?? '-' }}</p>
                                         <div class="d-flex flex-wrap text-muted small">
                                             <span class="mr-3">
                                                 <i class="fas fa-clock"></i>
@@ -47,6 +46,9 @@
                                                 {{ optional($sessionItem->session_end_time)->format('H:i') ?? '-' }}
                                             </span>
                                             <span class="mr-3"><i class="fas fa-hourglass-half"></i> Durasi {{ $sessionItem->session_duration }} menit</span>
+                                            @if(!empty($sessionItem->subject_display_name))
+                                                <span class="mr-3"><i class="fas fa-book"></i> {{ $sessionItem->subject_display_name }}</span>
+                                            @endif
                                             <span class="badge {{ $sessionItem->session_status === 'Active' ? 'badge-success' : 'badge-secondary' }}">
                                                 {{ $sessionItem->session_status }}
                                             </span>
@@ -83,7 +85,7 @@
                                         <option value="">-- Pilih Sesi --</option>
                                         @foreach ($sessions as $sessionItem)
                                             <option value="{{ $sessionItem->id }}" {{ old('exam_session_id') == $sessionItem->id ? 'selected' : '' }}>
-                                                {{ $sessionItem->subject->subject_name ?? '-' }} ({{ $sessionItem->exam->exam_code ?? '-' }})
+                                                {{ $sessionItem->exam->exam_name ?? '-' }} ({{ $sessionItem->exam->exam_code ?? '-' }})@if(!empty($sessionItem->subject_display_name)) - {{ $sessionItem->subject_display_name }}@endif
                                             </option>
                                         @endforeach
                                     </select>
@@ -130,7 +132,11 @@
                 <div class="modal-body">
                     <p>Anda memiliki ujian yang sedang berlangsung.</p>
                     <table class="borderless table-sm">
-                        <tr><th>Mata Pelajaran</th><td>:</td><td>{{ $ongoingAttempt->session->subject->subject_name ?? '-' }}</td></tr>
+                        <tr>
+                            <th>Mata Pelajaran</th>
+                            <td>:</td>
+                            <td>{{ optional($ongoingAttempt->session)->subject_display_name ?: '-' }}</td>
+                        </tr>
                     </table>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">

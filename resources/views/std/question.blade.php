@@ -76,12 +76,12 @@
                 </span>
             </div>
             <div class="meta-item">
-                <span class="meta-label">Modul</span>
-                <span
-                    id="meta-status-badge"
-                    class="badge badge-pill text-left px-0">
-                    {{ $question->question_category }}
-                </span>
+                <span class="meta-label">Pelajaran</span>
+                <span class="meta-value" id="meta-subject-name">{{ $question->subject->subject_name ?? 'N/A' }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Status Soal</span>
+                <span id="meta-answer-status" class="badge badge-pill {{ $statusBadgeClass }}">{{ $statusBadgeText }}</span>
             </div>
         </div>
     </div>
@@ -196,7 +196,7 @@
                                         class="option-input"
                                         {{ $isChecked ? 'checked' : '' }}
                                     >
-                                    <span class="option-marker">{{ $opt->option_label }}</span>
+                                    {{-- <span class="option-marker">{{ $opt->option_label }}</span> --}}
                                     <div class="option-content">
                                         @if($opt->option_image)
                                             <img src="{{ asset('storage/'.$opt->option_image) }}" alt="Pilihan {{ $opt->option_label }}" class="option-image">

@@ -12,7 +12,6 @@ class Question extends Model
 {
     protected $fillable = [
         'subject_id',
-        'question_category',
         'question_type',
         'question_format',
         'option_format',

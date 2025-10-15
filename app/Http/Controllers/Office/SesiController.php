@@ -64,8 +64,11 @@ class SesiController extends Controller
         $request->validate([
             'exam_id'           => 'required',
             'session_number'    => 'required',
-            'subject_id'        => 'required',
-            'session_duration'  => 'required',
+            'subjects'          => 'required|array|min:1',
+            'subjects.*.subject_id' => 'required|exists:subjects,id',
+            'subjects.*.question_count' => 'required|integer|min:1',
+            'subjects.*.duration' => 'required|integer|min:1',
+            'break_duration'    => 'nullable|integer|min:0',
             'session_start_time'=> 'required',
             'session_end_time'  => 'required',
             'random_question'   => 'required',
@@ -75,18 +78,34 @@ class SesiController extends Controller
             'session_status'    => 'required',
         ]);
 
+        // Check for duplicate subjects
+        $subjectIds = collect($request->subjects)->pluck('subject_id')->unique();
+        if ($subjectIds->count() !== collect($request->subjects)->count()) {
+            return back()->withErrors(['subjects' => 'Mata pelajaran tidak boleh duplikat dalam satu sesi.']);
+        }
+
+        $sessionSubjects = collect($request->subjects)->map(function ($subject) {
+            return [
+                'subject_id' => $subject['subject_id'],
+                'question_count' => $subject['question_count'],
+                'duration' => $subject['duration'],
+            ];
+        })->toArray();
+
         ExamSession::create([
             'exam_id'           => $request->exam_id,
             'session_number'    => $request->session_number,
-            'subject_id'        => $request->subject_id,
+            'subject_id'        => $sessionSubjects[0]['subject_id'], // Keep for backward compatibility
             'session_start_time'=> $request->session_start_time,
             'session_end_time'  => $request->session_end_time,
-            'session_duration'  => $request->session_duration,
+            'session_duration'  => collect($sessionSubjects)->sum('duration'), // Total duration from all subjects
+            'break_duration'    => $request->break_duration ?? 0,
             'random_question'   => $request->random_question,
             'random_answer'     => $request->random_answer,
             'show_result'       => $request->show_result,
             'show_score'        => $request->show_score,
             'session_status'    => $request->session_status,
+            'session_subjects'  => $sessionSubjects,
         ]);
 
         toast('Sesi Ujian berhasil ditambahkan', 'success');
@@ -122,10 +141,13 @@ class SesiController extends Controller
         $request->validate([
             'exam_id'           => 'required',
             'session_number'    => 'required',
-            'subject_id'        => 'required',
+            'subjects'          => 'required|array|min:1',
+            'subjects.*.subject_id' => 'required|exists:subjects,id',
+            'subjects.*.question_count' => 'required|integer|min:1',
+            'subjects.*.duration' => 'required|integer|min:1',
+            'break_duration'    => 'nullable|integer|min:0',
             'session_start_time'=> 'required',
             'session_end_time'  => 'required',
-            'session_duration'  => 'required',
             'random_question'   => 'required',
             'random_answer'     => 'required',
             'show_result'       => 'required',
@@ -133,18 +155,34 @@ class SesiController extends Controller
             'session_status'    => 'required',
         ]);
 
+        // Check for duplicate subjects
+        $subjectIds = collect($request->subjects)->pluck('subject_id')->unique();
+        if ($subjectIds->count() !== collect($request->subjects)->count()) {
+            return back()->withErrors(['subjects' => 'Mata pelajaran tidak boleh duplikat dalam satu sesi.']);
+        }
+
+        $sessionSubjects = collect($request->subjects)->map(function ($subject) {
+            return [
+                'subject_id' => $subject['subject_id'],
+                'question_count' => $subject['question_count'],
+                'duration' => $subject['duration'],
+            ];
+        })->toArray();
+
         ExamSession::where('id', $id)->update([
             'exam_id'           => $request->exam_id,
             'session_number'    => $request->session_number,
-            'subject_id'        => $request->subject_id,
+            'subject_id'        => $sessionSubjects[0]['subject_id'], // Keep for backward compatibility
             'session_start_time'=> $request->session_start_time,
             'session_end_time'  => $request->session_end_time,
-            'session_duration'  => $request->session_duration,
+            'session_duration'  => collect($sessionSubjects)->sum('duration'), // Total duration from all subjects
+            'break_duration'    => $request->break_duration ?? 0,
             'random_question'   => $request->random_question,
             'random_answer'     => $request->random_answer,
             'show_result'       => $request->show_result,
             'show_score'        => $request->show_score,
             'session_status'    => $request->session_status,
+            'session_subjects'  => $sessionSubjects,
         ]);
 
         toast('Sesi Ujian berhasil diubah', 'success');
@@ -159,5 +197,17 @@ class SesiController extends Controller
         ExamSession::where('id', $id)->delete();
         toast('Sesi Ujian berhasil dihapus', 'success');
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get sessions by exam ID for AJAX requests
+     */
+    public function getByExam($examId)
+    {
+        $sessions = ExamSession::where('exam_id', $examId)
+            ->with('subject')
+            ->get();
+
+        return response()->json($sessions);
     }
 }

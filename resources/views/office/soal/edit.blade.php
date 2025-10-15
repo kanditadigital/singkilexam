@@ -17,36 +17,22 @@
                     @method('PUT')
                     <input type="hidden" name="subject_id" value="{{ $soal->subject_id }}">
 
-                    <div class="form-group row">
-                        <div class="col-md-6">
-                            <label for="question_category">Kategori Soal <span class="text-danger">*</span></label>
-                            <select name="question_category" id="question_category" class="form-control custom-select @error('question_category') is-invalid @enderror" required>
-                                <option value="" disabled>Pilih Kategori</option>
-                                <option value="Literasi" {{ old('question_category', $soal->question_category) == 'Literasi' ? 'selected' : '' }}>Literasi</option>
-                                <option value="Numerasi" {{ old('question_category', $soal->question_category) == 'Numerasi' ? 'selected' : '' }}>Numerasi</option>
-                                <option value="Teknis" {{ old('question_category', $soal->question_category) == 'Teknis' ? 'selected' : '' }}>Teknis</option>
-                                <option value="Pedagogik" {{ old('question_category', $soal->question_category) == 'Pedagogik' ? 'selected' : '' }}>Pedagogik</option>
-                                <option value="TKP" {{ old('question_category', $soal->question_category) == 'TKP' ? 'selected' : '' }}>TKP (Tes Karakteristik Pribadi)</option>
-                            </select>
-                            @error('question_category')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="question_type">Tipe Soal <span class="text-danger">*</span></label>
-                            <select name="question_type" id="question_type" class="form-control custom-select @error('question_type') is-invalid @enderror" required>
-                                <option value="" disabled>Pilih Tipe</option>
-                                <option value="multiple_choice" {{ old('question_type', $soal->question_type) == 'multiple_choice' ? 'selected' : '' }}>Pilihan Ganda (Satu Jawaban)</option>
-                                <option value="multiple_response" {{ old('question_type', $soal->question_type) == 'multiple_response' ? 'selected' : '' }}>Pilihan Ganda (Banyak Jawaban)</option>
-                                <option value="true_false" {{ old('question_type', $soal->question_type) == 'true_false' ? 'selected' : '' }}>Benar/Salah</option>
-                                <option value="tkp" {{ old('question_type', $soal->question_type) == 'tkp' ? 'selected' : '' }}>TKP (Tes Karakteristik Pribadi)</option>
-                                <option value="matching" {{ old('question_type', $soal->question_type) == 'matching' ? 'selected' : '' }}>Matching (Menjodohkan)</option>
-                            </select>
-                            @error('question_type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
+                     <div class="form-group row">
+                         <div class="col-md-12">
+                             <label for="question_type">Tipe Soal <span class="text-danger">*</span></label>
+                             <select name="question_type" id="question_type" class="form-control custom-select @error('question_type') is-invalid @enderror" required>
+                                 <option value="" disabled>Pilih Tipe</option>
+                                 <option value="multiple_choice" {{ old('question_type', $soal->question_type) == 'multiple_choice' ? 'selected' : '' }}>Pilihan Ganda (Satu Jawaban)</option>
+                                 <option value="multiple_response" {{ old('question_type', $soal->question_type) == 'multiple_response' ? 'selected' : '' }}>Pilihan Ganda (Banyak Jawaban)</option>
+                                 <option value="true_false" {{ old('question_type', $soal->question_type) == 'true_false' ? 'selected' : '' }}>Benar/Salah</option>
+                                 <option value="tkp" {{ old('question_type', $soal->question_type) == 'tkp' ? 'selected' : '' }}>TKP (Tes Karakteristik Pribadi)</option>
+                                 <option value="matching" {{ old('question_type', $soal->question_type) == 'matching' ? 'selected' : '' }}>Matching (Menjodohkan)</option>
+                             </select>
+                             @error('question_type')
+                                 <div class="invalid-feedback">{{ $message }}</div>
+                             @enderror
+                         </div>
+                     </div>
 
                     <div class="form-group row">
                         <div class="col-md-6">

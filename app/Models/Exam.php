@@ -14,6 +14,12 @@ class Exam extends Model
         'exam_description',
         'exam_code',
         'exam_status',
+        'subject_config',
+        'break_duration',
+    ];
+
+    protected $casts = [
+        'subject_config' => 'array',
     ];
 
     public function sessions()
